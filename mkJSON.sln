@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.12
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{77ABDEBB-D536-4E32-ADAF-E8A18280C07C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MkJSON", "mkJSON\MkJSON.csproj", "{71A0A03D-15D5-4057-88C6-333A8A2D423B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{77ABDEBB-D536-4E32-ADAF-E8A18280C07C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77ABDEBB-D536-4E32-ADAF-E8A18280C07C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77ABDEBB-D536-4E32-ADAF-E8A18280C07C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77ABDEBB-D536-4E32-ADAF-E8A18280C07C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71A0A03D-15D5-4057-88C6-333A8A2D423B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71A0A03D-15D5-4057-88C6-333A8A2D423B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71A0A03D-15D5-4057-88C6-333A8A2D423B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71A0A03D-15D5-4057-88C6-333A8A2D423B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C3E17F4C-C3EE-4124-BA6A-383079E35F75}
+	EndGlobalSection
+EndGlobal
