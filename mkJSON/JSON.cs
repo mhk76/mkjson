@@ -686,8 +686,11 @@ namespace MkJSON
 
 		public override string ToString()
 		{
-			StringBuilder output = new StringBuilder();
+			return ToString(false);
+		}
 
+		public string ToString(bool toJsonString = false)
+		{
 			switch (_type)
 			{
 				case JSONValueType.Undefined:
@@ -699,36 +702,40 @@ namespace MkJSON
 				{
 					if ((bool)_value)
 					{
-						output.Append("true");
+						return "true";
 					}
-					else
-					{
-						output.Append("false");
-					}
-					break;
+					return "false";
 				}
 				case JSONValueType.String:
 				{
-					output.Append('"');
-					output.Append(EncodeJSONString((string)_value));
-					output.Append('"');
-					break;
+					if (toJsonString)
+					{
+						StringBuilder output = new StringBuilder();
+
+						output.Append('"');
+						output.Append(EncodeJSONString((string)_value));
+						output.Append('"');
+
+						return output.ToString();
+					}
+
+					return (string)_value;
 				}
 				case JSONValueType.Integer:
 				{
-					output.Append((long)_value);
-					break;
+					return ((long)_value).ToString();
 				}
 				case JSONValueType.Float:
 				{
-					output.Append(((double)_value).ToString(CultureInfo.InvariantCulture).Replace("+", "").ToLower());
-					break;
+					return ((double)_value).ToString(CultureInfo.InvariantCulture).Replace("+", "").ToLower();
 				}
 				case JSONValueType.Object:
 				{
+					StringBuilder output = new StringBuilder();
 					bool comma = false;
 
 					output.Append('{');
+
 					foreach (KeyValuePair<string, JSON> item in (Dictionary<string, JSON>)_value)
 					{
 						if (item.Value.Type == JSONValueType.Undefined)
@@ -743,19 +750,23 @@ namespace MkJSON
 						output.Append(EncodeJSONString(item.Key));
 						output.Append('"');
 						output.Append(':');
-						output.Append(item.Value.ToString());
+						output.Append(item.Value.ToString(true));
 
 						comma = true;
 					}
+
 					output.Append('}');
-					break;
+
+					return output.ToString();
 				}
 				case JSONValueType.Array:
 				{
+					StringBuilder output = new StringBuilder();
 					bool comma = false;
 					int index = -1;
 
 					output.Append('[');
+
 					foreach (KeyValuePair<int, JSON> item in (SortedDictionary<int, JSON>)_value)
 					{
 						if (item.Value.Type == JSONValueType.Undefined)
@@ -778,11 +789,12 @@ namespace MkJSON
 						{
 							output.Append(',');
 						}
-						output.Append(item.Value.ToString());
+						output.Append(item.Value.ToString(true));
 
 						comma = true;
 						index = item.Key;
 					}
+
 					for (int i = index + 1; i < _maxIndex; i++)
 					{
 						if (comma)
@@ -791,12 +803,16 @@ namespace MkJSON
 						}
 						output.Append("null");
 					}
+
 					output.Append(']');
-					break;
+
+					return output.ToString();
+				}
+				default:
+				{
+					throw new Exception("A bug: Unhandled value type");
 				}
 			}
-
-			return output.ToString();
 		}
 		#endregion
 
