@@ -137,7 +137,7 @@ namespace MkJSON
 		}
 		#endregion
 
-		#region contructors
+		#region Contructors
 		public JSON()
 		{
 		}
@@ -610,7 +610,7 @@ namespace MkJSON
 				return ((SortedDictionary<int, JSON>)_value)[index];
 			}
 
-			return null;
+			return new JSON(JSONValueType.Undefined);
 		}
 
 		public JSON GetItem(string name)
@@ -625,7 +625,7 @@ namespace MkJSON
 				return ((Dictionary<string, JSON>)_value)[name];
 			}
 
-			return null;
+			return new JSON(JSONValueType.Undefined);
 		}
 		#endregion
 
@@ -690,10 +690,10 @@ namespace MkJSON
 
 			switch (_type)
 			{
+				case JSONValueType.Undefined:
 				case JSONValueType.Null:
 				{
-					output.Append("null");
-					break;
+					return null;
 				}
 				case JSONValueType.Boolean:
 				{
