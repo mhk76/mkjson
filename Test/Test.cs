@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MkJSON;
@@ -6,10 +7,10 @@ using MkJSON;
 namespace Test
 {
 	[TestClass]
-	public class ToolsTest
+	public class JSONTest
 	{
 		[TestMethod]
-		public void Test_JSON_Parse()
+		public void JSON_Parse()
 		{
 			string[] passFiles = Directory.GetFiles(@"..\..\test", "pass*.json");
 			string[] failFiles = Directory.GetFiles(@"..\..\test", "fail*.json");
@@ -50,14 +51,14 @@ namespace Test
 		}
 
 		[TestMethod]
-		public void Test_JSON_Add_and_Get()
+		public void JSON_Add_and_Get()
 		{
 			string testItem = "initializing";
 
 			try
 			{
 				JSON json = new JSON();
-				JSON array = new JSON(JSON.JSONValueType.Array);
+				JSON array = new JSON(JSON.ValueType.Array);
 				DateTime date = new DateTime(2004, 2, 29, 13, 15, 59);
 
 				testItem = "adding to an array a long";
@@ -77,7 +78,7 @@ namespace Test
 				testItem = "adding to an array a string object";
 				array.Add(15, new JSON("World"));
 				testItem = "adding to an array index an empty object";
-				array[17] = new JSON(JSON.JSONValueType.Object);
+				array[17] = new JSON(JSON.ValueType.Object);
 
 				testItem = "adding to an object a long";
 				json.Add("long", (long)10000000000);
@@ -98,7 +99,7 @@ namespace Test
 				testItem = "adding to an object a string object";
 				json.Add("Hello", new JSON("World"));
 				testItem = "adding to an object's named property an empty object";
-				json["object"] = new JSON(JSON.JSONValueType.Object);
+				json["object"] = new JSON(JSON.ValueType.Object);
 
 
 				testItem = "comparing the value of an element 'long' to a long";
@@ -159,6 +160,70 @@ namespace Test
 			{
 				Assert.Fail(e.Message + " While " + testItem);
 			}
+		}
+
+		[TestMethod]
+		public void Manipulation_And_Properties()
+		{
+			string testItem = "initializing";
+
+			try
+			{
+				JSON json = new JSON();
+
+				testItem = "pushing a string into undefined json";
+				json.Push("Hello World!");
+				testItem = "pushing a null into the array";
+				json.Push(JSON.Null);
+				testItem = "pushing an undefined into the array";
+				json.Push(JSON.Undefined);
+
+				testItem = "checking property 'Count'";
+				Assert.IsTrue(json.Count == 3);
+
+				testItem = "checking property 'IsArray'";
+				Assert.IsTrue(json.IsArray == true);
+				Assert.IsTrue(json[0].IsArray == false);
+
+				testItem = "checking property 'IsNull'";
+				Assert.IsTrue(json[1].IsNull == true);
+				Assert.IsTrue(json[0].IsNull == false);
+
+				testItem = "checking property 'IsUndefined'";
+				Assert.IsTrue(json[2].IsUndefined == true);
+				Assert.IsTrue(json[1].IsUndefined == false);
+
+				testItem = "checking property 'Type'";
+				Assert.IsTrue(json.Type == JSON.ValueType.Array);
+
+				testItem = "enumerating the array items";
+				int counter = 0;
+				foreach (KeyValuePair<int, JSON> item in json.GetIndexEnumerator())
+				{
+					++counter;
+				}
+				Assert.IsTrue(counter == 3);
+
+				testItem = "testing 'CopyTo' method";
+				KeyValuePair<int, JSON>[] itemArray = new KeyValuePair<int, JSON>[2];
+				json.CopyTo(itemArray, 1);
+				/*Assert.IsTrue(itemArray[0].Value.Equals(json[1]));
+				Assert.IsTrue(itemArray[1].Value.Equals(json[2]));*/
+
+				testItem = "clearing the array";
+				json.Clear();
+				Assert.IsTrue(json.Count == 0);
+
+			}
+			catch (Exception e)
+			{
+				Assert.Fail(e.Message + " While " + testItem);
+			}
+		}
+
+		[TestMethod]
+		public void Error_Checking()
+		{
 		}
 	}
 }
