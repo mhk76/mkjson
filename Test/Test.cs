@@ -105,34 +105,34 @@ namespace Test
 				testItem = "comparing the value of an element 'long' to a long";
 				Assert.IsTrue(json.GetItem("long").ToLong() == (long)10000000000);
 				testItem = "comparing the value of an element 'long' to a bool";
-				Assert.IsTrue(json.GetItem("int").ToBool() == true);
+				Assert.IsTrue(json.GetItem("int").ToBool(false) == true);
 
 				testItem = "comparing the value of an element 'int' to an int";
 				Assert.IsTrue(json.GetItem("int").ToInt() == (int)2);
 				testItem = "comparing the value of an element 'int' to a long";
-				Assert.IsTrue(json.GetItem("int").ToLong() == (long)2);
+				Assert.IsTrue(json.GetItem("int").ToLong(false) == (long)2);
 				testItem = "comparing the value of an element 'int' to a bool";
-				Assert.IsTrue(json.GetItem("int").ToBool() == true);
+				Assert.IsTrue(json.GetItem("int").ToBool(false) == true);
 
 				testItem = "comparing the value of an element 'float' to a float";
 				Assert.IsTrue(json.GetItem("float").ToFloat() == (float)3.456789);
 				testItem = "comparing the value of an element 'float' to an int";
-				Assert.IsTrue(json.GetItem("float").ToInt() == (int)3);
+				Assert.IsTrue(json.GetItem("float").ToInt(false) == (int)3);
 				testItem = "comparing the value of an element 'float' to a long";
-				Assert.IsTrue(json.GetItem("float").ToLong() == (long)3);
+				Assert.IsTrue(json.GetItem("float").ToLong(false) == (long)3);
 				testItem = "comparing the value of an element 'float' to a double";
 				Assert.IsTrue(json.GetItem("float").ToDouble() == (double)3.456789);
 				testItem = "comparing the value of an element 'float' to a bool";
-				Assert.IsTrue(json.GetItem("float").ToBool() == true);
+				Assert.IsTrue(json.GetItem("float").ToBool(false) == true);
 
 				testItem = "comparing the value of an element 'double' to an int";
-				Assert.IsTrue(json.GetItem("double").ToInt() == (int)4);
+				Assert.IsTrue(json.GetItem("double").ToInt(false) == (int)4);
 				testItem = "comparing the value of an element 'double' to a long";
-				Assert.IsTrue(json.GetItem("double").ToLong() == (long)4);
+				Assert.IsTrue(json.GetItem("double").ToLong(false) == (long)4);
 				testItem = "comparing the value of an element 'double' to a double";
-				Assert.IsTrue(json.GetItem("double").ToDouble() == (double)4.56);
+				Assert.IsTrue(json.GetItem("double").ToDouble(false) == (double)4.56);
 				testItem = "comparing the value of an element 'double' to a bool";
-				Assert.IsTrue(json.GetItem("double").ToBool() == true);
+				Assert.IsTrue(json.GetItem("double").ToBool(false) == true);
 
 				testItem = "comparing the value of an element 'bool' to a bool";
 				Assert.IsTrue(json.GetItem("bool").ToBool() == true);
@@ -148,9 +148,9 @@ namespace Test
 				JSON arrayJson = json["array"];
 
 
-				testItem = "comparing ToString output";
+				testItem = "comparing Stringify() output";
 				Assert.AreEqual(
-					json.ToString(),
+					json.Stringify(),
 					"{\"long\":10000000000,\"int\":2,\"float\":3.456789,\"double\":4.56,\"bool\":true,\"date\":\"2004-02-29T13:15:59.000\""
 					+ ",\"string\":\"Hello World\",\"array\":[null,10000000000,null,2,null,3.45,null,4.56789,null,true,null,\"2004-02-29T13:15:59.000\","
 					+ "null,\"Hello\",null,\"World\",null,{}],\"Hello\":\"World\",\"object\":{}}"
@@ -207,8 +207,8 @@ namespace Test
 				testItem = "testing 'CopyTo' method";
 				KeyValuePair<int, JSON>[] itemArray = new KeyValuePair<int, JSON>[2];
 				json.CopyTo(itemArray, 1);
-				/*Assert.IsTrue(itemArray[0].Value.Equals(json[1]));
-				Assert.IsTrue(itemArray[1].Value.Equals(json[2]));*/
+				Assert.IsTrue(itemArray[0].Value.Equals(json[1]));
+				Assert.IsTrue(itemArray[1].Value.Equals(json[2]));
 
 				testItem = "clearing the array";
 				json.Clear();

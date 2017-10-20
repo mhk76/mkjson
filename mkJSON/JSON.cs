@@ -67,7 +67,19 @@ namespace MkJSON
 		{
 			get
 			{
-				return _maxIndex + 1;
+				if (_type == ValueType.Array)
+				{
+					return _maxIndex + 1;
+				}
+				if (_type == ValueType.Object)
+				{
+					return ((Dictionary<string, JSON>)_value).Count;
+				}
+				if (_type == ValueType.Undefined ||_type == ValueType.Null)
+				{
+					return 0;
+				}
+				return 1;
 			}
 		}
 
@@ -537,13 +549,14 @@ namespace MkJSON
 			}
 
 			SortedDictionary<int, JSON> list = (SortedDictionary<int, JSON>)_value;
+			int count = list.Count - index;
 
-			if (list.Count - index > array.Length)
+			if (count > array.Length)
 			{
 				throw new Exception("The array is too small");
 			}
 
-			for (int i = 0; i < list.Count - index; i++)
+			for (int i = 0; i < count; i++)
 			{
 				array[i] = list.ElementAt(index);
 				++index;
@@ -581,6 +594,203 @@ namespace MkJSON
 				array[i] = list.ElementAt(index);
 				++index;
 			}
+		}
+		#endregion
+
+		#region Equals()
+		public override bool Equals(object value)
+		{
+			Type type = value.GetType();
+
+			if (type == __jsonType)
+			{
+				return Equals((JSON)value);
+			}
+			if (type == typeof(int))
+			{
+				return Equals((int)value);
+			}
+
+			return false;
+		}
+
+		public bool Equals(JSON value, bool strict = true)
+		{
+			switch (_type)
+			{
+				case ValueType.Undefined:
+				{
+					return value.Type == ValueType.Undefined || (!strict && value.Type == ValueType.Null);
+				}
+				case ValueType.Null:
+				{
+					return value.Type == ValueType.Null || (!strict && value.Type == ValueType.Undefined);
+				}
+				case ValueType.Array:
+				{
+					if (value.Type != ValueType.Array || value.Count != Count)
+					{
+						return false;
+					}
+
+					SortedDictionary<int, JSON> array = (SortedDictionary<int, JSON>)_value;
+
+					for (int i = 0; i < Count; i++)
+					{
+						if (!array[i].Equals(value[i]))
+						{
+							return false;
+						}
+					}
+					return true;
+				}
+				case ValueType.Object:
+				{
+					if (value.Type != ValueType.Object)
+					{
+						return false;
+					}
+
+					Dictionary<string, JSON> array = (Dictionary<string, JSON>)_value;
+
+					if (value.Count != array.Count)
+					{
+						return false;
+					}
+
+					foreach (KeyValuePair<string, JSON> item in array)
+					{
+						if (!value.Contains(item))
+						{
+							return false;
+						}
+					}
+					return true;
+				}
+				case ValueType.Boolean:
+				{
+					if (strict)
+					{
+						return value.Type == ValueType.Boolean && value.ToBool(true) == (bool)_value;
+					}
+					return value.ToBool(false) == (bool)_value;
+				}
+				case ValueType.Float:
+				{
+					if (strict)
+					{
+						return value.Type == ValueType.Float && value.ToDouble(true) == (double)_value;
+					}
+					return value.ToDouble(false) == (double)_value;
+				}
+				case ValueType.Integer:
+				{
+					if (strict)
+					{
+						return value.Type == ValueType.Integer && value.ToLong(true) == (long)_value;
+					}
+					return value.ToLong(false) == (long)_value;
+				}
+				case ValueType.String:
+				{
+					if (strict)
+					{
+						return value.Type == ValueType.String && value.ToString(true) == (string)_value;
+					}
+					return value.ToString(false) == (string)_value;
+				}
+				default:
+				{
+					throw new Exception("A bug: unhandled value type");
+				}
+			}
+		}
+
+		bool Equals(bool value, bool strict = true)
+		{
+			if (strict)
+			{
+				return _type == ValueType.Boolean && value == (bool)_value;
+			}
+			return value == ToBool(false);
+		}
+
+		bool Equals(float value, bool strict = true)
+		{
+			if (strict && _type != ValueType.Float)
+			{
+				return false;
+			}
+			if (TryGetValue(out float? output, strict))
+			{
+				return value.Equals(output.Value);
+			}
+			return false;
+		}
+
+		bool Equals(double value, bool strict = true)
+		{
+			if (strict && _type != ValueType.Float)
+			{
+				return false;
+			}
+			if (TryGetValue(out double? output, strict))
+			{
+				return value.Equals(output.Value);
+			}
+			return false;
+		}
+
+		bool Equals(int value, bool strict = true)
+		{
+			if (strict && _type != ValueType.Integer)
+			{
+				return false;
+			}
+			if (TryGetValue(out int? output, strict))
+			{
+				return value == output.Value;
+			}
+			return false;
+		}
+
+		bool Equals(long value, bool strict = true)
+		{
+			if (strict && _type != ValueType.Integer)
+			{
+				return false;
+			}
+			if (TryGetValue(out long? output, strict))
+			{
+				return value == output.Value;
+			}
+			return false;
+		}
+
+		bool Equals(string value, bool strict = true)
+		{
+			if (strict && _type != ValueType.String)
+			{
+				return false;
+			}
+			if (TryGetValue(out string output, strict))
+			{
+				return value == output;
+			}
+			return false;
+		}
+
+		bool Equals(DateTime value)
+		{
+			if (_type != ValueType.String)
+			{
+				return false;
+			}
+			if (TryGetValue(out DateTime? output))
+			{
+				return value.CompareTo(output.Value) == 0;
+			}
+			return false;
 		}
 		#endregion
 
@@ -648,9 +858,9 @@ namespace MkJSON
 		#endregion
 
 		#region Type conversions
-		public bool? ToBool()
+		public bool? ToBool(bool strict = true)
 		{
-			if (TryGetValue(out bool? value))
+			if (TryGetValue(out bool? value, strict))
 			{
 				return value;
 			}
@@ -666,36 +876,36 @@ namespace MkJSON
 			return null;
 		}
 
-		public double? ToDouble()
+		public double? ToDouble(bool strict = true)
 		{
-			if (TryGetValue(out double? value))
+			if (TryGetValue(out double? value, strict))
 			{
 				return value;
 			}
 			return null;
 		}
 
-		public float? ToFloat()
+		public float? ToFloat(bool strict = true)
 		{
-			if (TryGetValue(out float? value))
+			if (TryGetValue(out float? value, strict))
 			{
 				return value;
 			}
 			return null;
 		}
 
-		public int? ToInt()
+		public int? ToInt(bool strict = true)
 		{
-			if (TryGetValue(out int? value))
+			if (TryGetValue(out int? value, strict))
 			{
 				return value;
 			}
 			return null;
 		}
 
-		public long? ToLong()
+		public long? ToLong(bool strict = true)
 		{
-			if (TryGetValue(out long? value))
+			if (TryGetValue(out long? value, strict))
 			{
 				return value;
 			}
@@ -704,10 +914,56 @@ namespace MkJSON
 
 		public override string ToString()
 		{
-			return ToString(false);
+			return ToString(true);
 		}
 
-		public string ToString(bool toJsonString = false)
+		public string ToString(bool strict = true)
+		{
+			if (strict && _type != ValueType.String)
+			{
+				return null;
+			}
+
+			switch (_type)
+			{
+				case ValueType.Undefined:
+				case ValueType.Null:
+				{
+					return null;
+				}
+				case ValueType.Boolean:
+				{
+					if ((bool)_value)
+					{
+						return "true";
+					}
+					return "false";
+				}
+				case ValueType.String:
+				{
+					return (string)_value;
+				}
+				case ValueType.Integer:
+				{
+					return ((long)_value).ToString();
+				}
+				case ValueType.Float:
+				{
+					return ((double)_value).ToString(CultureInfo.InvariantCulture).Replace("+", "").ToLower();
+				}
+				case ValueType.Object:
+				case ValueType.Array:
+				{
+					return Stringify();
+				}
+				default:
+				{
+					throw new Exception("A bug: Unhandled value type");
+				}
+			}
+		}
+
+		public string Stringify()
 		{
 			switch (_type)
 			{
@@ -726,18 +982,13 @@ namespace MkJSON
 				}
 				case ValueType.String:
 				{
-					if (toJsonString)
-					{
-						StringBuilder output = new StringBuilder();
+					StringBuilder output = new StringBuilder();
 
-						output.Append('"');
-						output.Append(EncodeJSONString((string)_value));
-						output.Append('"');
+					output.Append('"');
+					output.Append(EncodeJSONString((string)_value));
+					output.Append('"');
 
-						return output.ToString();
-					}
-
-					return (string)_value;
+					return output.ToString();
 				}
 				case ValueType.Integer:
 				{
@@ -768,7 +1019,7 @@ namespace MkJSON
 						output.Append(EncodeJSONString(item.Key));
 						output.Append('"');
 						output.Append(':');
-						output.Append(item.Value.ToString(true));
+						output.Append(item.Value.Stringify());
 
 						comma = true;
 					}
@@ -807,7 +1058,7 @@ namespace MkJSON
 						{
 							output.Append(',');
 						}
-						output.Append(item.Value.ToString(true));
+						output.Append(item.Value.Stringify());
 
 						comma = true;
 						index = item.Key;
@@ -828,7 +1079,7 @@ namespace MkJSON
 				}
 				default:
 				{
-					throw new Exception("A bug: Unhandled value type");
+					throw new Exception("A bug: unhandled value type");
 				}
 			}
 		}
@@ -1011,12 +1262,17 @@ namespace MkJSON
 			return false;
 		}
 
-		public bool TryGetValue(out string output)
+		public bool TryGetValue(out string output, bool strict = true)
 		{
 			switch (_type)
 			{
 				case ValueType.Boolean:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					if ((bool)_value)
 					{
 						output = "true";
@@ -1034,11 +1290,21 @@ namespace MkJSON
 				}
 				case ValueType.Integer:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					output = ((long)_value).ToString();
 					return true;
 				}
 				case ValueType.Float:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					output = ((double)_value).ToString(CultureInfo.InvariantCulture).Replace("+", "").ToLower();
 					return true;
 				}
@@ -1050,9 +1316,9 @@ namespace MkJSON
 			}
 		}
 
-		public bool TryGetValue(out int? output)
+		public bool TryGetValue(out int? output, bool strict = true)
 		{
-			if (TryGetValue(out long? longValue))
+			if (TryGetValue(out long? longValue, strict))
 			{
 				output = (int)longValue;
 				return true;
@@ -1061,24 +1327,22 @@ namespace MkJSON
 			return false;
 		}
 
-		public bool TryGetValue(out bool? output)
+		public bool TryGetValue(out bool? output, bool strict = true)
 		{
 			switch (_type)
 			{
 				case ValueType.Boolean:
 				{
-					if ((bool)_value)
-					{
-						output = true;
-					}
-					else
-					{
-						output = false;
-					}
+					output = (bool)_value;
 					return true;
 				}
 				case ValueType.String:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					if (bool.TryParse((string)_value, out bool value))
 					{
 						output = value;
@@ -1089,11 +1353,21 @@ namespace MkJSON
 				}
 				case ValueType.Integer:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					output = (long)_value != 0;
 					return true;
 				}
 				case ValueType.Float:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					output = (double)_value != 0d;
 					return true;
 				}
@@ -1105,12 +1379,17 @@ namespace MkJSON
 			}
 		}
 
-		public bool TryGetValue(out long? output)
+		public bool TryGetValue(out long? output, bool strict = true)
 		{
 			switch (_type)
 			{
 				case ValueType.Boolean:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					if ((bool)_value)
 					{
 						output = 1;
@@ -1123,6 +1402,11 @@ namespace MkJSON
 				}
 				case ValueType.String:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					if (long.TryParse((string)_value, out long value))
 					{
 						output = value;
@@ -1138,6 +1422,11 @@ namespace MkJSON
 				}
 				case ValueType.Float:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					output = (long)(double)_value;
 					return true;
 				}
@@ -1149,7 +1438,7 @@ namespace MkJSON
 			}
 		}
 
-		public bool TryGetValue(out float? output)
+		public bool TryGetValue(out float? output, bool strict = true)
 		{
 			if (TryGetValue(out double? longValue))
 			{
@@ -1160,12 +1449,17 @@ namespace MkJSON
 			return false;
 		}
 
-		public bool TryGetValue(out double? output)
+		public bool TryGetValue(out double? output, bool strict = true)
 		{
 			switch (_type)
 			{
 				case ValueType.Boolean:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					if ((bool)_value)
 					{
 						output = 1;
@@ -1178,6 +1472,11 @@ namespace MkJSON
 				}
 				case ValueType.String:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					if (double.TryParse((string)_value, out double value))
 					{
 						output = value;
@@ -1188,6 +1487,11 @@ namespace MkJSON
 				}
 				case ValueType.Integer:
 				{
+					if (strict)
+					{
+						output = null;
+						return false;
+					}
 					output = (double)(long)_value;
 					return true;
 				}
