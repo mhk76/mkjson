@@ -9,7 +9,7 @@ namespace MkJSON
 {
 	public class JSON : IDictionary<string, JSON>
 	{
-		public enum JSONValueType
+		public enum ValueType
 		{
 			Undefined,
 			Null,
@@ -22,10 +22,11 @@ namespace MkJSON
 		}
 
 		private static readonly char[] __whitespace = new char[] { ' ', '\n', '\r', '\t' };
+		private static readonly Type __jsonType = new JSON().GetType();
 
 		private static string _errorMessage = null;
 
-		private JSONValueType _type = JSONValueType.Undefined;
+		private ValueType _type = ValueType.Undefined;
 		private object _value = null;
 		private int _maxIndex = -1;
 
@@ -82,7 +83,7 @@ namespace MkJSON
 		{
 			get
 			{
-				return _type == JSONValueType.Null;
+				return _type == ValueType.Null;
 			}
 		}
 
@@ -90,7 +91,7 @@ namespace MkJSON
 		{
 			get
 			{
-				return _type == JSONValueType.Undefined;
+				return _type == ValueType.Undefined;
 			}
 		}
 
@@ -98,7 +99,31 @@ namespace MkJSON
 		{
 			get
 			{
-				return _type == JSONValueType.Array;
+				return _type == ValueType.Array;
+			}
+		}
+
+		public static JSON Undefined
+		{
+			get
+			{
+				return new JSON(ValueType.Undefined);
+			}
+		}
+
+		public static JSON Null
+		{
+			get
+			{
+				return new JSON(ValueType.Null);
+			}
+		}
+
+		public ValueType Type
+		{
+			get
+			{
+				return _type;
 			}
 		}
 
@@ -106,7 +131,7 @@ namespace MkJSON
 		{
 			get
 			{
-				if (_type != JSONValueType.Object)
+				if (_type != ValueType.Object)
 				{
 					return null;
 				}
@@ -115,19 +140,11 @@ namespace MkJSON
 			}
 		}
 
-		public JSONValueType Type
-		{
-			get
-			{
-				return _type;
-			}
-		}
-
 		public ICollection<JSON> Values
 		{
 			get
 			{
-				if (_type != JSONValueType.Object)
+				if (_type != ValueType.Object)
 				{
 					return null;
 				}
@@ -140,21 +157,22 @@ namespace MkJSON
 		#region Contructors
 		public JSON()
 		{
+			_type = ValueType.Undefined;
 		}
 
-		public JSON(JSONValueType type)
+		public JSON(ValueType type)
 		{
-			if (type == JSONValueType.Array)
+			if (type == ValueType.Array)
 			{
 				_value = new SortedDictionary<int, JSON>();
 			}
-			else if (type == JSONValueType.Object)
+			else if (type == ValueType.Object)
 			{
 				_value = new Dictionary<string, JSON>();
 			}
-			else if (type != JSONValueType.Undefined)
+			else if (type != ValueType.Undefined && type != ValueType.Null)
 			{
-				throw new Exception("JSON object can be initialized only as an Array or an Object");
+				throw new Exception("JSON object cannot be initialized as " + type.ToString());
 			}
 
 			_type = type;
@@ -162,7 +180,7 @@ namespace MkJSON
 
 		public JSON(JSON value)
 		{
-			_type = JSONValueType.Object;
+			_type = ValueType.Object;
 			_value = value;
 		}
 
@@ -170,48 +188,48 @@ namespace MkJSON
 		{
 			if (value == null)
 			{
-				_type = JSONValueType.Null;
+				_type = ValueType.Null;
 			}
 			else
 			{
-				_type = JSONValueType.String;
+				_type = ValueType.String;
 				_value = value;
 			}
 		}
 
 		public JSON(bool value)
 		{
-			_type = JSONValueType.Boolean;
+			_type = ValueType.Boolean;
 			_value = value;
 		}
 
 		public JSON(int value)
 		{
-			_type = JSONValueType.Integer;
+			_type = ValueType.Integer;
 			_value = (long)value;
 		}
 
 		public JSON(long value)
 		{
-			_type = JSONValueType.Integer;
+			_type = ValueType.Integer;
 			_value = value;
 		}
 
 		public JSON(float value)
 		{
-			_type = JSONValueType.Float;
+			_type = ValueType.Float;
 			_value = double.Parse(value.ToString("r"));
 		}
 
 		public JSON(double value)
 		{
-			_type = JSONValueType.Float;
+			_type = ValueType.Float;
 			_value = value;
 		}
 
 		public JSON(DateTime value)
 		{
-			_type = JSONValueType.String;
+			_type = ValueType.String;
 			_value = value.ToString("yyyy-MM-ddTHH:mm:ss.fff");
 		}
 		#endregion
@@ -336,12 +354,12 @@ namespace MkJSON
 
 		public void Add(int index, JSON value)
 		{
-			if (_type == JSONValueType.Undefined)
+			if (_type == ValueType.Undefined)
 			{
 				_value = new SortedDictionary<int, JSON>();
-				_type = JSONValueType.Array;
+				_type = ValueType.Array;
 			}
-			else if (_type != JSONValueType.Array)
+			else if (_type != ValueType.Array)
 			{
 				throw new Exception("Can access indices only with an Array");
 			}
@@ -409,19 +427,19 @@ namespace MkJSON
 
 		public void Add(string name, JSON value)
 		{
-			if (_type == JSONValueType.Undefined)
+			if (_type == ValueType.Undefined)
 			{
 				_value = new Dictionary<string, JSON>();
-				_type = JSONValueType.Object;
+				_type = ValueType.Object;
 			}
-			else if (_type != JSONValueType.Object)
+			else if (_type != ValueType.Object)
 			{
 				throw new Exception("Can add named items only to an Object");
 			}
 
 			if (value == null)
 			{
-				value = new JSON(JSONValueType.Undefined);
+				value = new JSON(ValueType.Undefined);
 			}
 
 			if (((Dictionary<string, JSON>)_value).ContainsKey(name))
@@ -437,12 +455,12 @@ namespace MkJSON
 
 		public void Clear()
 		{
-			if (_type == JSONValueType.Array)
+			if (_type == ValueType.Array)
 			{
 				_value = new SortedDictionary<int, JSON>();
 				_maxIndex = -1;
 			}
-			if (_type == JSONValueType.Object)
+			if (_type == ValueType.Object)
 			{
 				_value = new Dictionary<string, JSON>();
 			}
@@ -451,7 +469,7 @@ namespace MkJSON
 		#region Contains()
 		public bool Contains(KeyValuePair<int, JSON> item)
 		{
-			if (_value != null && _type == JSONValueType.Array)
+			if (_value != null && _type == ValueType.Array)
 			{
 				SortedDictionary<int, JSON> list = (SortedDictionary<int, JSON>)_value;
 
@@ -465,7 +483,7 @@ namespace MkJSON
 
 		public bool Contains(KeyValuePair<string, JSON> item)
 		{
-			if (_value != null && _type == JSONValueType.Object)
+			if (_value != null && _type == ValueType.Object)
 			{
 				Dictionary<string, JSON> list = (Dictionary<string, JSON>)_value;
 
@@ -481,7 +499,7 @@ namespace MkJSON
 		#region ContainsKey()
 		public bool ContainsKey(int index)
 		{
-			if (_value != null && _type == JSONValueType.Array)
+			if (_value != null && _type == ValueType.Array)
 			{
 				return ((SortedDictionary<int, JSON>)_value).ContainsKey(index);
 			}
@@ -490,7 +508,7 @@ namespace MkJSON
 
 		public bool ContainsKey(string name)
 		{
-			if (_value != null && _type == JSONValueType.Object)
+			if (_value != null && _type == ValueType.Object)
 			{
 				return ((Dictionary<string, JSON>)_value).ContainsKey(name);
 			}
@@ -501,7 +519,7 @@ namespace MkJSON
 		#region CopyTo()
 		public void CopyTo(KeyValuePair<int, JSON>[] array, int index)
 		{
-			if (_type != JSONValueType.Array)
+			if (_type != ValueType.Array)
 			{
 				throw new Exception("Can access indices only with an Array");
 			}
@@ -511,32 +529,32 @@ namespace MkJSON
 			}
 			if (index < 0)
 			{
-				throw new ArgumentOutOfRangeException();
+				throw new Exception("Index out of range");
 			}
 			if (array.Rank != 1)
 			{
-				throw new ArgumentException();
+				throw new Exception("Not a one dimensional array");
 			}
 
 			SortedDictionary<int, JSON> list = (SortedDictionary<int, JSON>)_value;
 
-			if (array.Length - index > list.Count)
+			if (list.Count - index > array.Length)
 			{
-				throw new ArgumentException();
+				throw new Exception("The array is too small");
 			}
 
-			for (int i = 0; i < list.Count; i++)
+			for (int i = 0; i < list.Count - index; i++)
 			{
-				array[index] = list.ElementAt(i);
+				array[i] = list.ElementAt(index);
 				++index;
 			}
 		}
 
 		public void CopyTo(KeyValuePair<string, JSON>[] array, int index)
 		{
-			if (_type != JSONValueType.Array)
+			if (_type != ValueType.Object)
 			{
-				throw new Exception("Can access named elements only with an Object");
+				throw new Exception("Cant iterate key values only with an object");
 			}
 			if (array == null)
 			{
@@ -544,23 +562,23 @@ namespace MkJSON
 			}
 			if (index < 0)
 			{
-				throw new ArgumentOutOfRangeException();
+				throw new Exception("Index out of range");
 			}
 			if (array.Rank != 1)
 			{
-				throw new ArgumentException();
+				throw new Exception("Not a one dimensional array");
 			}
 
-			Dictionary<string, JSON> list = (Dictionary<string, JSON>)_value;
+			SortedDictionary<string, JSON> list = (SortedDictionary<string, JSON>)_value;
 
-			if (array.Length - index > list.Count)
+			if (list.Count - index > array.Length)
 			{
-				throw new ArgumentException();
+				throw new Exception("The array is too small");
 			}
 
-			for (int i = 0; i < list.Count; i++)
+			for (int i = 0; i < list.Count - index; i++)
 			{
-				array[index] = list.ElementAt(i);
+				array[i] = list.ElementAt(index);
 				++index;
 			}
 		}
@@ -569,12 +587,12 @@ namespace MkJSON
 		#region GetEnumerator()
 		public IEnumerator<KeyValuePair<string, JSON>> GetEnumerator()
 		{
-			if (_type == JSONValueType.Object)
+			if (_type != JSON.ValueType.Object)
 			{
-				return ((Dictionary<string, JSON>)_value).GetEnumerator();
+				throw new Exception("Can iterate names only from an object");
 			}
 
-			return null;
+			return ((Dictionary<string, JSON>)_value).GetEnumerator();
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
@@ -582,21 +600,21 @@ namespace MkJSON
 			return GetEnumerator();
 		}
 
-		public IEnumerator<KeyValuePair<int, JSON>> IndexEnumerator()
+		public SortedDictionary<int, JSON> GetIndexEnumerator()
 		{
-			if (_type == JSONValueType.Array)
+			if (_type != JSON.ValueType.Array)
 			{
-				return ((SortedDictionary<int, JSON>)_value).GetEnumerator();
+				throw new Exception("Can iterate indices only from an array");
 			}
 
-			return null;
+			return (SortedDictionary<int, JSON>)_value;
 		}
 		#endregion
 
 		#region GetItem()
 		public JSON GetItem(int index)
 		{
-			if (_type != JSONValueType.Array)
+			if (_type != ValueType.Array)
 			{
 				throw new Exception("Can access indices only with an Array");
 			}
@@ -610,12 +628,12 @@ namespace MkJSON
 				return ((SortedDictionary<int, JSON>)_value)[index];
 			}
 
-			return new JSON(JSONValueType.Undefined);
+			return new JSON(ValueType.Undefined);
 		}
 
 		public JSON GetItem(string name)
 		{
-			if (_type != JSONValueType.Object)
+			if (_type != ValueType.Object)
 			{
 				throw new Exception("Can access by named elements only with an Object");
 			}
@@ -625,7 +643,7 @@ namespace MkJSON
 				return ((Dictionary<string, JSON>)_value)[name];
 			}
 
-			return new JSON(JSONValueType.Undefined);
+			return new JSON(ValueType.Undefined);
 		}
 		#endregion
 
@@ -693,12 +711,12 @@ namespace MkJSON
 		{
 			switch (_type)
 			{
-				case JSONValueType.Undefined:
-				case JSONValueType.Null:
+				case ValueType.Undefined:
+				case ValueType.Null:
 				{
 					return null;
 				}
-				case JSONValueType.Boolean:
+				case ValueType.Boolean:
 				{
 					if ((bool)_value)
 					{
@@ -706,7 +724,7 @@ namespace MkJSON
 					}
 					return "false";
 				}
-				case JSONValueType.String:
+				case ValueType.String:
 				{
 					if (toJsonString)
 					{
@@ -721,15 +739,15 @@ namespace MkJSON
 
 					return (string)_value;
 				}
-				case JSONValueType.Integer:
+				case ValueType.Integer:
 				{
 					return ((long)_value).ToString();
 				}
-				case JSONValueType.Float:
+				case ValueType.Float:
 				{
 					return ((double)_value).ToString(CultureInfo.InvariantCulture).Replace("+", "").ToLower();
 				}
-				case JSONValueType.Object:
+				case ValueType.Object:
 				{
 					StringBuilder output = new StringBuilder();
 					bool comma = false;
@@ -738,7 +756,7 @@ namespace MkJSON
 
 					foreach (KeyValuePair<string, JSON> item in (Dictionary<string, JSON>)_value)
 					{
-						if (item.Value.Type == JSONValueType.Undefined)
+						if (item.Value.Type == ValueType.Undefined)
 						{
 							continue;
 						}
@@ -759,7 +777,7 @@ namespace MkJSON
 
 					return output.ToString();
 				}
-				case JSONValueType.Array:
+				case ValueType.Array:
 				{
 					StringBuilder output = new StringBuilder();
 					bool comma = false;
@@ -769,7 +787,7 @@ namespace MkJSON
 
 					foreach (KeyValuePair<int, JSON> item in (SortedDictionary<int, JSON>)_value)
 					{
-						if (item.Value.Type == JSONValueType.Undefined)
+						if (item.Value.Type == ValueType.Undefined)
 						{
 							continue;
 						}
@@ -854,12 +872,12 @@ namespace MkJSON
 
 		public void Push(JSON value)
 		{
-			if (_type == JSONValueType.Undefined)
+			if (_type == ValueType.Undefined)
 			{
 				_value = new SortedDictionary<int, JSON>();
-				_type = JSONValueType.Array;
+				_type = ValueType.Array;
 			}
-			else if (_type != JSONValueType.Array)
+			else if (_type != ValueType.Array)
 			{
 				throw new Exception("Can push only to an Array");
 			}
@@ -872,7 +890,7 @@ namespace MkJSON
 		#region Remove()
 		public bool Remove(int index)
 		{
-			if (_value != null && _type == JSONValueType.Array)
+			if (_value != null && _type == ValueType.Array)
 			{
 				SortedDictionary<int, JSON> list = (SortedDictionary<int, JSON>)_value;
 
@@ -899,7 +917,7 @@ namespace MkJSON
 
 		public bool Remove(string name)
 		{
-			if (_value != null && _type == JSONValueType.Object)
+			if (_value != null && _type == ValueType.Object)
 			{
 				Dictionary<string, JSON> list = (Dictionary<string, JSON>)_value;
 
@@ -914,7 +932,7 @@ namespace MkJSON
 
 		public bool Remove(KeyValuePair<int, JSON> item)
 		{
-			if (_value != null && _type == JSONValueType.Array)
+			if (_value != null && _type == ValueType.Array)
 			{
 				SortedDictionary<int, JSON> list = (SortedDictionary<int, JSON>)_value;
 
@@ -941,7 +959,7 @@ namespace MkJSON
 
 		public bool Remove(KeyValuePair<string, JSON> item)
 		{
-			if (_value != null && _type == JSONValueType.Object)
+			if (_value != null && _type == ValueType.Object)
 			{
 				Dictionary<string, JSON> list = (Dictionary<string, JSON>)_value;
 
@@ -958,7 +976,7 @@ namespace MkJSON
 		#region TryGetValue()
 		public bool TryGetValue(int index, out JSON output)
 		{
-			if (_type != JSONValueType.Array || index < 0 || index > _maxIndex)
+			if (_type != ValueType.Array || index < 0 || index > _maxIndex)
 			{
 				output = null;
 				return false;
@@ -970,14 +988,14 @@ namespace MkJSON
 			}
 			else
 			{
-				output = new JSON(JSONValueType.Undefined);
+				output = new JSON(ValueType.Undefined);
 			}
 			return true;
 		}
 
 		public bool TryGetValue(string name, out JSON output)
 		{
-			if (_type != JSONValueType.Object)
+			if (_type != ValueType.Object)
 			{
 				output = null;
 				return false;
@@ -997,7 +1015,7 @@ namespace MkJSON
 		{
 			switch (_type)
 			{
-				case JSONValueType.Boolean:
+				case ValueType.Boolean:
 				{
 					if ((bool)_value)
 					{
@@ -1009,17 +1027,17 @@ namespace MkJSON
 					}
 					return true;
 				}
-				case JSONValueType.String:
+				case ValueType.String:
 				{
 					output = (string)_value;
 					return true;
 				}
-				case JSONValueType.Integer:
+				case ValueType.Integer:
 				{
 					output = ((long)_value).ToString();
 					return true;
 				}
-				case JSONValueType.Float:
+				case ValueType.Float:
 				{
 					output = ((double)_value).ToString(CultureInfo.InvariantCulture).Replace("+", "").ToLower();
 					return true;
@@ -1047,7 +1065,7 @@ namespace MkJSON
 		{
 			switch (_type)
 			{
-				case JSONValueType.Boolean:
+				case ValueType.Boolean:
 				{
 					if ((bool)_value)
 					{
@@ -1059,7 +1077,7 @@ namespace MkJSON
 					}
 					return true;
 				}
-				case JSONValueType.String:
+				case ValueType.String:
 				{
 					if (bool.TryParse((string)_value, out bool value))
 					{
@@ -1069,12 +1087,12 @@ namespace MkJSON
 					output = null;
 					return false;
 				}
-				case JSONValueType.Integer:
+				case ValueType.Integer:
 				{
 					output = (long)_value != 0;
 					return true;
 				}
-				case JSONValueType.Float:
+				case ValueType.Float:
 				{
 					output = (double)_value != 0d;
 					return true;
@@ -1091,7 +1109,7 @@ namespace MkJSON
 		{
 			switch (_type)
 			{
-				case JSONValueType.Boolean:
+				case ValueType.Boolean:
 				{
 					if ((bool)_value)
 					{
@@ -1103,7 +1121,7 @@ namespace MkJSON
 					}
 					return true;
 				}
-				case JSONValueType.String:
+				case ValueType.String:
 				{
 					if (long.TryParse((string)_value, out long value))
 					{
@@ -1113,12 +1131,12 @@ namespace MkJSON
 					output = null;
 					return false;
 				}
-				case JSONValueType.Integer:
+				case ValueType.Integer:
 				{
 					output = (long)_value;
 					return true;
 				}
-				case JSONValueType.Float:
+				case ValueType.Float:
 				{
 					output = (long)(double)_value;
 					return true;
@@ -1146,7 +1164,7 @@ namespace MkJSON
 		{
 			switch (_type)
 			{
-				case JSONValueType.Boolean:
+				case ValueType.Boolean:
 				{
 					if ((bool)_value)
 					{
@@ -1158,7 +1176,7 @@ namespace MkJSON
 					}
 					return true;
 				}
-				case JSONValueType.String:
+				case ValueType.String:
 				{
 					if (double.TryParse((string)_value, out double value))
 					{
@@ -1168,12 +1186,12 @@ namespace MkJSON
 					output = null;
 					return false;
 				}
-				case JSONValueType.Integer:
+				case ValueType.Integer:
 				{
 					output = (double)(long)_value;
 					return true;
 				}
-				case JSONValueType.Float:
+				case ValueType.Float:
 				{
 					output = (double)_value;
 					return true;
@@ -1188,7 +1206,7 @@ namespace MkJSON
 
 		public bool TryGetValue(out DateTime? output)
 		{
-			if (_type != JSONValueType.String)
+			if (_type != ValueType.String)
 			{
 				output = null;
 				return false;
@@ -1261,7 +1279,7 @@ namespace MkJSON
 
 		private static JSON ParsePart(char[] charArray, ref int index)
 		{
-			JSON json = new JSON(JSONValueType.Undefined);
+			JSON json = new JSON(ValueType.Undefined);
 			State state = State.WaitStart;
 			StringBuilder builder = null;
 			Stack<State> nextState = new Stack<State>();
@@ -1285,22 +1303,22 @@ namespace MkJSON
 								{
 									if (c == '[')
 									{
-										if (json.Type != JSONValueType.Array && json.Type != JSONValueType.Undefined)
+										if (json.Type != ValueType.Array && json.Type != ValueType.Undefined)
 										{
 											_errorMessage = "Invalid character " + c + " at char " + index;
 											return null;
 										}
-										json = new JSON(JSONValueType.Array);
+										json = new JSON(ValueType.Array);
 										state = State.WaitValue;
 									}
 									else
 									{
-										if (json.Type != JSONValueType.Object && json.Type != JSONValueType.Undefined)
+										if (json.Type != ValueType.Object && json.Type != ValueType.Undefined)
 										{
 											_errorMessage = "Invalid character " + c + " at char " + index;
 											return null;
 										}
-										json = new JSON(JSONValueType.Object);
+										json = new JSON(ValueType.Object);
 										state = State.WaitName;
 									}
 									break;
@@ -1312,7 +1330,7 @@ namespace MkJSON
 								{
 									return null;
 								}
-								if (json.Type == JSONValueType.Array)
+								if (json.Type == ValueType.Array)
 								{
 									json.Push(value);
 								}
@@ -1331,7 +1349,7 @@ namespace MkJSON
 								{
 									return null;
 								}
-								if (json.Type == JSONValueType.Array)
+								if (json.Type == ValueType.Array)
 								{
 									json.Push(value);
 								}
@@ -1372,7 +1390,7 @@ namespace MkJSON
 							}
 							case State.WaitNext:
 							{
-								if (json.Type != JSONValueType.Object)
+								if (json.Type != ValueType.Object)
 								{
 									_errorMessage = "Invalid character } at char " + index;
 									return null;
@@ -1385,7 +1403,7 @@ namespace MkJSON
 							case State.Exponent:
 							case State.WaitPeriod:
 							{
-								if (json.Type == JSONValueType.Array)
+								if (json.Type == ValueType.Array)
 								{
 									_errorMessage = "Invalid character } at char " + index;
 									return null;
@@ -1424,7 +1442,7 @@ namespace MkJSON
 							}
 							case State.WaitNext:
 							{
-								if (json.Type != JSONValueType.Array)
+								if (json.Type != ValueType.Array)
 								{
 									_errorMessage = "Invalid character } at char " + index;
 									return null;
@@ -1437,7 +1455,7 @@ namespace MkJSON
 							case State.Exponent:
 							case State.WaitPeriod:
 							{
-								if (json.Type == JSONValueType.Array)
+								if (json.Type == ValueType.Array)
 								{
 									json.Push(parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 									++index;
@@ -1468,7 +1486,7 @@ namespace MkJSON
 							{
 								builder = new StringBuilder();
 								name = null;
-								if (json.Type == JSONValueType.Array)
+								if (json.Type == ValueType.Array)
 								{
 									state = State.Value;
 								}
@@ -1499,7 +1517,7 @@ namespace MkJSON
 							}
 							case State.Value:
 							{
-								if (json.Type == JSONValueType.Array)
+								if (json.Type == ValueType.Array)
 								{
 									json.Push(new JSON(builder.ToString()));
 								}
@@ -1562,7 +1580,7 @@ namespace MkJSON
 							case State.Exponent:
 							case State.WaitPeriod:
 							{
-								if (json.Type == JSONValueType.Array)
+								if (json.Type == ValueType.Array)
 								{
 									json.Push(parseNumberString(builder.ToString(), state == State.Number));
 								}
@@ -1623,7 +1641,7 @@ namespace MkJSON
 							case State.WaitStart:
 							case State.WaitValue:
 							{
-								if (state == State.WaitStart && json.Type != JSONValueType.Array)
+								if (state == State.WaitStart && json.Type != ValueType.Array)
 								{
 									_errorMessage = "Invalid character " + c + " at char " + index;
 									return null;
@@ -1655,7 +1673,7 @@ namespace MkJSON
 									}
 								}
 
-								if (json.Type == JSONValueType.Array)
+								if (json.Type == ValueType.Array)
 								{
 									json.Push(value);
 								}
@@ -1794,7 +1812,7 @@ namespace MkJSON
 						{
 							case State.WaitStart:
 							{
-								if (json.Type != JSONValueType.Array)
+								if (json.Type != ValueType.Array)
 								{
 									_errorMessage = "Invalid character " + c + " at char " + index;
 									return null;
@@ -1874,7 +1892,7 @@ namespace MkJSON
 						{
 							case State.WaitStart:
 							{
-								if (json.Type != JSONValueType.Array)
+								if (json.Type != ValueType.Array)
 								{
 									_errorMessage = "Invalid character - at char " + index;
 									return null;
@@ -2013,7 +2031,7 @@ namespace MkJSON
 									_errorMessage = "Invalid character at char " + index;
 									return null;
 								}
-								if (json.Type == JSONValueType.Array)
+								if (json.Type == ValueType.Array)
 								{
 									json.Push(parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								}
@@ -2117,7 +2135,7 @@ namespace MkJSON
 				}
 				else
 				{
-					return new JSON(JSONValueType.Null);
+					return new JSON(ValueType.Null);
 				}
 			}
 			else
@@ -2130,7 +2148,7 @@ namespace MkJSON
 				}
 				else
 				{
-					return new JSON(JSONValueType.Null);
+					return new JSON(ValueType.Null);
 				}
 			}
 		}
