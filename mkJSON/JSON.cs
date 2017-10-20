@@ -821,6 +821,11 @@ namespace MkJSON
 		}
 		#endregion
 
+		public override int GetHashCode()
+		{
+			return base.GetHashCode();
+		}
+
 		#region GetItem()
 		public JSON GetItem(int index)
 		{
