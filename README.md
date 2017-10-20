@@ -1,2 +1,2 @@
 # mkjson
-C# JSON dll
+C# JSON component dll
