@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace MkJSON
@@ -23,6 +24,7 @@ namespace MkJSON
 
 		private static readonly char[] __whitespace = new char[] { ' ', '\n', '\r', '\t' };
 		private static readonly Type __jsonType = new JSON().GetType();
+		private static readonly Dictionary<Type, CallMethod> __tryGetValueMethods = GetTryGetValueMethods();
 
 		private static string _errorMessage = null;
 
@@ -75,7 +77,7 @@ namespace MkJSON
 				{
 					return ((Dictionary<string, JSON>)_value).Count;
 				}
-				if (_type == ValueType.Undefined ||_type == ValueType.Null)
+				if (_type == ValueType.Undefined || _type == ValueType.Null)
 				{
 					return 0;
 				}
@@ -166,6 +168,58 @@ namespace MkJSON
 		}
 		#endregion
 
+		#region Init workers
+		private static Dictionary<Type, CallMethod> GetTryGetValueMethods()
+		{
+			Dictionary<Type, CallMethod> methods = new Dictionary<Type, CallMethod>();
+
+			MethodInfo method;
+
+			method = __jsonType.GetMethod("TryGetValue", new Type[] { typeof(string).MakeByRefType(), typeof(bool) });
+			methods.Add(typeof(string), new CallMethod(method, typeof(string)));
+
+			method = __jsonType.GetMethod("TryGetValue", new Type[] { typeof(bool?).MakeByRefType(), typeof(bool) });
+			methods.Add(typeof(bool?), new CallMethod(method, typeof(bool?)));
+			methods.Add(typeof(bool), new CallMethod(method, typeof(bool?)));
+
+			method = __jsonType.GetMethod("TryGetValue", new Type[] { typeof(float?).MakeByRefType(), typeof(bool) });
+			methods.Add(typeof(float?), new CallMethod(method, typeof(float?)));
+			methods.Add(typeof(float), new CallMethod(method, typeof(float?)));
+
+			method = __jsonType.GetMethod("TryGetValue", new Type[] { typeof(double?).MakeByRefType(), typeof(bool) });
+			methods.Add(typeof(double?), new CallMethod(method, typeof(double?)));
+			methods.Add(typeof(double), new CallMethod(method, typeof(double?)));
+
+			method = __jsonType.GetMethod("TryGetValue", new Type[] { typeof(int?).MakeByRefType(), typeof(bool) });
+			methods.Add(typeof(int?), new CallMethod(method, typeof(int?)));
+			methods.Add(typeof(int), new CallMethod(method, typeof(int?)));
+
+			method = __jsonType.GetMethod("TryGetValue", new Type[] { typeof(long?).MakeByRefType(), typeof(bool) });
+			methods.Add(typeof(long?), new CallMethod(method, typeof(long?)));
+			methods.Add(typeof(long), new CallMethod(method, typeof(long?)));
+
+			method = __jsonType.GetMethod("TryGetValue", new Type[] { typeof(DateTime?).MakeByRefType() });
+			methods.Add(typeof(DateTime?), new CallMethod(method, typeof(DateTime?)));
+			methods.Add(typeof(DateTime), new CallMethod(method, typeof(DateTime?)));
+
+			return methods;
+		}
+
+		private struct CallMethod
+		{
+			public MethodInfo MethodInfo;
+			public Type ParameterType;
+			public bool WithStrict;
+
+			public CallMethod(MethodInfo methodInfo, Type parameterType)
+			{
+				MethodInfo = methodInfo;
+				ParameterType = parameterType;
+				WithStrict = (methodInfo.GetParameters().Length == 2);
+			}
+		}
+		#endregion
+
 		#region Contructors
 		public JSON()
 		{
@@ -188,12 +242,6 @@ namespace MkJSON
 			}
 
 			_type = type;
-		}
-
-		public JSON(JSON value)
-		{
-			_type = ValueType.Object;
-			_value = value;
 		}
 
 		public JSON(string value)
@@ -246,83 +294,6 @@ namespace MkJSON
 		}
 		#endregion
 
-		public static string EncodeJSONString(string input)
-		{
-			if (input == null || input.Length == 0)
-			{
-				return "";
-			}
-
-			char c;
-			int i;
-			string hex;
-			StringBuilder output = new StringBuilder(input.Length + 4);
-
-			for (i = 0; i < input.Length; i++)
-			{
-				c = input[i];
-
-				switch (c)
-				{
-					case '\\':
-					case '"':
-					case '/':
-					{
-						output.Append('\\');
-						output.Append(c);
-						break;
-					}
-					case '\b':
-					{
-						output.Append('\\');
-						output.Append('b');
-						break;
-					}
-					case '\f':
-					{
-						output.Append('\\');
-						output.Append('f');
-						break;
-					}
-					case '\n':
-					{
-						output.Append('\\');
-						output.Append('n');
-						break;
-					}
-					case '\r':
-					{
-						output.Append('\\');
-						output.Append('r');
-						break;
-					}
-					case '\t':
-					{
-						output.Append('\\');
-						output.Append('t');
-						break;
-					}
-					default:
-					{
-						if (c < ' ' || c > 255)
-						{
-							hex = "000" + String.Format("X", c);
-							output.Append('\\');
-							output.Append('u');
-							output.Append(hex.Substring(hex.Length - 4));
-						}
-						else
-						{
-							output.Append(c);
-						}
-						break;
-					}
-				}
-			}
-
-			return output.ToString();
-		}
-
 		#region Add(index, value)
 		public void Add(int index, string value)
 		{
@@ -357,6 +328,11 @@ namespace MkJSON
 		public void Add(int index, DateTime value)
 		{
 			Add(index, new JSON(value));
+		}
+
+		public void Add<T>(int index, T value)
+		{
+			Add(index, JSON.From(value));
 		}
 
 		public void Add(KeyValuePair<int, JSON> item)
@@ -430,6 +406,11 @@ namespace MkJSON
 		public void Add(string name, DateTime value)
 		{
 			Add(name, new JSON(value));
+		}
+
+		public void Add<T>(string name, T value)
+		{
+			Add(name, JSON.From(value));
 		}
 
 		public void Add(KeyValuePair<string, JSON> item)
@@ -600,18 +581,7 @@ namespace MkJSON
 		#region Equals()
 		public override bool Equals(object value)
 		{
-			Type type = value.GetType();
-
-			if (type == __jsonType)
-			{
-				return Equals((JSON)value);
-			}
-			if (type == typeof(int))
-			{
-				return Equals((int)value);
-			}
-
-			return false;
+			return Equals(JSON.From(value));
 		}
 
 		public bool Equals(JSON value, bool strict = true)
@@ -794,6 +764,266 @@ namespace MkJSON
 		}
 		#endregion
 
+		#region From
+		public static JSON From<T>(T input)
+		{
+			if (input == null)
+			{
+				return JSON.Null;
+			}
+
+			Type inputType = input.GetType();
+
+			if (inputType == typeof(bool))
+			{
+				return new JSON((bool)(object)input);
+			}
+			if (inputType == typeof(bool?))
+			{
+				bool? value = (bool?)(object)input;
+
+				if (value.HasValue)
+				{
+					return new JSON(value.Value);
+				}
+				return JSON.Null;
+			}
+			if (inputType == typeof(float))
+			{
+				return new JSON((float)(object)input);
+			}
+			if (inputType == typeof(float?))
+			{
+				float? value = (float?)(object)input;
+
+				if (value.HasValue)
+				{
+					return new JSON(value.Value);
+				}
+				return JSON.Null;
+			}
+			if (inputType == typeof(double))
+			{
+				return new JSON((double)(object)input);
+			}
+			if (inputType == typeof(double?))
+			{
+				double? value = (double?)(object)input;
+
+				if (value.HasValue)
+				{
+					return new JSON(value.Value);
+				}
+				return JSON.Null;
+			}
+			if (inputType == typeof(int))
+			{
+				return new JSON((int)(object)input);
+			}
+			if (inputType == typeof(int?))
+			{
+				int? value = (int?)(object)input;
+
+				if (value.HasValue)
+				{
+					return new JSON(value.Value);
+				}
+				return JSON.Null;
+			}
+			if (inputType == typeof(long))
+			{
+				return new JSON((long)(object)input);
+			}
+			if (inputType == typeof(long?))
+			{
+				long? value = (long?)(object)input;
+
+				if (value.HasValue)
+				{
+					return new JSON(value.Value);
+				}
+				return JSON.Null;
+			}
+			if (inputType == typeof(string))
+			{
+				return new JSON((string)(object)input);
+			}
+			if (inputType == typeof(DateTime))
+			{
+				return new JSON(((DateTime)(object)input));
+			}
+			if (inputType == typeof(DateTime?))
+			{
+				DateTime? value = (DateTime?)(object)input;
+
+				if (value.HasValue)
+				{
+					return new JSON(value.Value);
+				}
+				return JSON.Null;
+			}
+			if (inputType == __jsonType)
+			{
+				return (JSON)(object)input;
+			}
+			if (inputType.IsArray)
+			{
+				return GetArray((Array)(object)input);
+			}
+
+			JSON output = new JSON();
+
+			foreach (FieldInfo field in input.GetType().GetFields())
+			{
+				output.Add(field.Name, JSON.From((object)field.GetValue(input)));
+			}
+
+			foreach (PropertyInfo property in input.GetType().GetProperties())
+			{
+				if (property.CanRead)
+				{
+					output.Add(property.Name, JSON.From((object)property.GetValue(input)));
+				}
+			}
+
+			return output;
+		}
+
+		private static JSON GetArray(Array input)
+		{
+			JSON output = new JSON(ValueType.Array);
+			Type inputType = input.GetType().GetElementType();
+
+			foreach (object item in input)
+			{
+				if (item == null)
+				{
+					output.Push(JSON.Null);
+					continue;
+				}
+				if (inputType == typeof(bool))
+				{
+					output.Push((bool)(object)item);
+					continue;
+				}
+				if (inputType == typeof(bool?))
+				{
+					bool? value = (bool?)(object)item;
+
+					if (value.HasValue)
+					{
+						output.Push(value.Value);
+						continue;
+					}
+					output.Push(JSON.Null);
+					continue;
+				}
+				if (inputType == typeof(float))
+				{
+					output.Push((float)(object)item);
+					continue;
+				}
+				if (inputType == typeof(float?))
+				{
+					float? value = (float?)(object)item;
+
+					if (value.HasValue)
+					{
+						output.Push(value.Value);
+						continue;
+					}
+					output.Push(JSON.Null);
+					continue;
+				}
+				if (inputType == typeof(double))
+				{
+					output.Push((double)(object)item);
+					continue;
+				}
+				if (inputType == typeof(double?))
+				{
+					double? value = (double?)(object)item;
+
+					if (value.HasValue)
+					{
+						output.Push(value.Value);
+						continue;
+					}
+					output.Push(JSON.Null);
+					continue;
+				}
+				if (inputType == typeof(int))
+				{
+					output.Push((int)(object)item);
+					continue;
+				}
+				if (inputType == typeof(int?))
+				{
+					int? value = (int?)(object)item;
+
+					if (value.HasValue)
+					{
+						output.Push(value.Value);
+						continue;
+					}
+					output.Push(JSON.Null);
+					continue;
+				}
+				if (inputType == typeof(long))
+				{
+					output.Push((long)(object)item);
+					continue;
+				}
+				if (inputType == typeof(long?))
+				{
+					long? value = (long?)(object)item;
+
+					if (value.HasValue)
+					{
+						output.Push(value.Value);
+						continue;
+					}
+					output.Push(JSON.Null);
+					continue;
+				}
+				if (inputType == typeof(string))
+				{
+					output.Push((string)(object)item);
+					continue;
+				}
+				if (inputType == typeof(DateTime?))
+				{
+					DateTime? value = (DateTime?)(object)item;
+
+					if (value.HasValue)
+					{
+						output.Push(value.Value);
+						continue;
+					}
+					output.Push(JSON.Null);
+					continue;
+				}
+				if (inputType == typeof(DateTime))
+				{
+					output.Push((DateTime)(object)item);
+					continue;
+				}
+				if (inputType == __jsonType)
+				{
+					output.Push((JSON)(object)item);
+					continue;
+				}
+				if (inputType.IsArray)
+				{
+					output.Push(GetArray((Array)(object)item));
+					continue;
+				}
+			}
+
+			return output;
+		}
+		#endregion
+
 		#region GetEnumerator()
 		public IEnumerator<KeyValuePair<string, JSON>> GetEnumerator()
 		{
@@ -968,14 +1198,241 @@ namespace MkJSON
 			}
 		}
 
+		public T To<T>(bool strict = true) where T : new()
+		{
+			T output = new T();
+			TypedReference refOutput = __makeref(output);
+
+			if (output.GetType() == __jsonType)
+			{
+				return (T)(object)this;
+			}
+
+			foreach (FieldInfo field in output.GetType().GetFields())
+			{
+				if (GetValue(this, field.FieldType, field.Name, out object value, strict))
+				{
+					field.SetValueDirect(refOutput, value);
+				}
+			}
+
+			foreach (PropertyInfo property in output.GetType().GetProperties())
+			{
+				if (property.CanWrite && GetValue(this, property.PropertyType, property.Name, out object value, strict))
+				{
+					property.SetValue(output, value);
+				}
+			}
+
+			return output;
+		}
+
+		private bool GetValue(JSON target, Type type, string name, out object output, bool strict)
+		{
+			if (!target.ContainsKey(name))
+			{
+				output = null;
+				return false;
+			}
+
+			if (type == typeof(bool))
+			{
+				output = target.GetItem(name).ToBool(strict);
+				return true;
+			}
+			if (type == typeof(float))
+			{
+				output = target.GetItem(name).ToFloat(strict);
+				return true;
+			}
+			if (type == typeof(double))
+			{
+				output = target.GetItem(name).ToDouble(strict);
+				return true;
+			}
+			if (type == typeof(int))
+			{
+				output = target.GetItem(name).ToInt(strict);
+				return true;
+			}
+			if (type == typeof(long))
+			{
+				output = target.GetItem(name).ToLong(strict);
+				return true;
+			}
+			if (type == typeof(string))
+			{
+				output = target.GetItem(name).ToString(strict);
+				return true;
+			}
+			if (type == typeof(DateTime))
+			{
+				output = target.GetItem(name).ToDateTime();
+				return true;
+			}
+			if (type.IsArray)
+			{
+				JSON value = target.GetItem(name);
+
+				if (value.Type != ValueType.Array)
+				{
+					output = null;
+					return false;
+				}
+
+				Type elementType = type.GetElementType();
+				Type nullableType = Nullable.GetUnderlyingType(elementType);
+				bool isNullable = (nullableType != null);
+
+				if (isNullable)
+				{
+					elementType = nullableType;
+				}
+
+				if (elementType == typeof(bool))
+				{
+					if (isNullable)
+					{
+						output = GetArray<bool?>(value, elementType, strict);
+						return true;
+					}
+					output = GetArray<bool>(value, elementType, strict);
+					return true;
+				}
+				if (elementType == typeof(float))
+				{
+					if (isNullable)
+					{
+						output = GetArray<float?>(value, elementType, strict);
+						return true;
+					}
+					output = GetArray<float>(value, elementType, strict);
+					return true;
+				}
+				if (elementType == typeof(double))
+				{
+					if (isNullable)
+					{
+						output = GetArray<double?>(value, elementType, strict);
+						return true;
+					}
+					output = GetArray<double>(value, elementType, strict);
+					return true;
+				}
+				if (elementType == typeof(int))
+				{
+					if (isNullable)
+					{
+						output = GetArray<int?>(value, elementType, strict);
+						return true;
+					}
+					output = GetArray<int>(value, elementType, strict);
+					return true;
+				}
+				if (elementType == typeof(long))
+				{
+					if (isNullable)
+					{
+						output = GetArray<long?>(value, elementType, strict);
+						return true;
+					}
+					output = GetArray<long>(value, elementType, strict);
+					return true;
+				}
+				if (elementType == typeof(string))
+				{
+					output = GetArray<string>(value, elementType, strict);
+					return true;
+				}
+				if (elementType == typeof(DateTime))
+				{
+					if (isNullable)
+					{
+						output = GetArray<DateTime?>(value, elementType, strict);
+						return true;
+					}
+					output = GetArray<DateTime>(value, elementType, strict);
+					return true;
+				}
+				if (elementType == type)
+				{
+					output = GetArray<dynamic>(value, elementType, strict);
+					return true;
+				}
+
+				output = null;
+				return false;
+			}
+
+			output = target.GetItem(name).To<dynamic>(strict);
+
+			if (output.GetType() == type)
+			{
+				return true;
+			}
+
+			output = null;
+			return false;
+		}
+
+		private T[] GetArray<T>(JSON input, Type elementType, bool strict = false)
+		{
+			List<T> output = new List<T>();
+			int index = 0;
+
+			foreach (KeyValuePair<int, JSON> item in input.GetIndexEnumerator())
+			{
+				for (int i = index; i < item.Key; i++)
+				{
+					output.Add(default(T));
+				}
+
+				if (__tryGetValueMethods.TryGetValue(elementType, out CallMethod callMethod))
+				{
+					object[] parameters;
+
+					if (callMethod.WithStrict)
+					{
+						parameters = new object[] { null, strict };
+					}
+					else
+					{
+						parameters = new object[] { null };
+					}
+
+					if ((bool)callMethod.MethodInfo.Invoke(item.Value, parameters))
+					{
+						output.Add((T)parameters[0]);
+					}
+					else
+					{
+						output.Add(default(T));
+					}
+
+					++index;
+					continue;
+				}
+
+				output.Add(default(T));
+				++index;
+			}
+
+			return output.ToArray();
+		}
+		#endregion
+
+		#region Stringify()
 		public string Stringify()
 		{
 			switch (_type)
 			{
 				case ValueType.Undefined:
-				case ValueType.Null:
 				{
 					return null;
+				}
+				case ValueType.Null:
+				{
+					return "null";
 				}
 				case ValueType.Boolean:
 				{
@@ -1087,6 +1544,83 @@ namespace MkJSON
 					throw new Exception("A bug: unhandled value type");
 				}
 			}
+		}
+
+		public static string EncodeJSONString(string input)
+		{
+			if (input == null || input.Length == 0)
+			{
+				return "";
+			}
+
+			char c;
+			int i;
+			string hex;
+			StringBuilder output = new StringBuilder(input.Length + 4);
+
+			for (i = 0; i < input.Length; i++)
+			{
+				c = input[i];
+
+				switch (c)
+				{
+					case '\\':
+					case '"':
+					case '/':
+					{
+						output.Append('\\');
+						output.Append(c);
+						break;
+					}
+					case '\b':
+					{
+						output.Append('\\');
+						output.Append('b');
+						break;
+					}
+					case '\f':
+					{
+						output.Append('\\');
+						output.Append('f');
+						break;
+					}
+					case '\n':
+					{
+						output.Append('\\');
+						output.Append('n');
+						break;
+					}
+					case '\r':
+					{
+						output.Append('\\');
+						output.Append('r');
+						break;
+					}
+					case '\t':
+					{
+						output.Append('\\');
+						output.Append('t');
+						break;
+					}
+					default:
+					{
+						if (c < ' ' || c > 255)
+						{
+							hex = "000" + String.Format("X", c);
+							output.Append('\\');
+							output.Append('u');
+							output.Append(hex.Substring(hex.Length - 4));
+						}
+						else
+						{
+							output.Append(c);
+						}
+						break;
+					}
+				}
+			}
+
+			return output.ToString();
 		}
 		#endregion
 
@@ -1717,7 +2251,7 @@ namespace MkJSON
 									_errorMessage = "Invalid character } at char " + index;
 									return null;
 								}
-								json.Add(name, parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+								json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								++index;
 								return json;
 							}
@@ -1766,7 +2300,7 @@ namespace MkJSON
 							{
 								if (json.Type == ValueType.Array)
 								{
-									json.Push(parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									json.Push(ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 									++index;
 									return json;
 								}
@@ -1891,11 +2425,11 @@ namespace MkJSON
 							{
 								if (json.Type == ValueType.Array)
 								{
-									json.Push(parseNumberString(builder.ToString(), state == State.Number));
+									json.Push(ParseNumberString(builder.ToString(), state == State.Number));
 								}
 								else
 								{
-									json.Add(name, parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								}
 								state = State.WaitStart;
 								break;
@@ -2342,11 +2876,11 @@ namespace MkJSON
 								}
 								if (json.Type == ValueType.Array)
 								{
-									json.Push(parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									json.Push(ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								}
 								else
 								{
-									json.Add(name, parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								}
 								state = State.WaitNext;
 								break;
@@ -2432,13 +2966,11 @@ namespace MkJSON
 			}
 		}
 
-		private static JSON parseNumberString(string number, bool isInteger)
+		private static JSON ParseNumberString(string number, bool isInteger)
 		{
 			if (isInteger)
 			{
-				long value;
-
-				if (long.TryParse(number, out value))
+				if (long.TryParse(number, out long value))
 				{
 					return new JSON(value);
 				}
@@ -2449,9 +2981,7 @@ namespace MkJSON
 			}
 			else
 			{
-				double value;
-
-				if (double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+				if (double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
 				{
 					return new JSON(value);
 				}
