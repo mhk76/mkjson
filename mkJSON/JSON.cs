@@ -75,7 +75,7 @@ namespace MkJSON
 				{
 					return ((Dictionary<string, JSON>)_value).Count;
 				}
-				if (_type == ValueType.Undefined ||_type == ValueType.Null)
+				if (_type == ValueType.Undefined || _type == ValueType.Null)
 				{
 					return 0;
 				}
@@ -190,12 +190,6 @@ namespace MkJSON
 			_type = type;
 		}
 
-		public JSON(JSON value)
-		{
-			_type = ValueType.Object;
-			_value = value;
-		}
-
 		public JSON(string value)
 		{
 			if (value == null)
@@ -245,83 +239,6 @@ namespace MkJSON
 			_value = value.ToString("yyyy-MM-ddTHH:mm:ss.fff");
 		}
 		#endregion
-
-		public static string EncodeJSONString(string input)
-		{
-			if (input == null || input.Length == 0)
-			{
-				return "";
-			}
-
-			char c;
-			int i;
-			string hex;
-			StringBuilder output = new StringBuilder(input.Length + 4);
-
-			for (i = 0; i < input.Length; i++)
-			{
-				c = input[i];
-
-				switch (c)
-				{
-					case '\\':
-					case '"':
-					case '/':
-					{
-						output.Append('\\');
-						output.Append(c);
-						break;
-					}
-					case '\b':
-					{
-						output.Append('\\');
-						output.Append('b');
-						break;
-					}
-					case '\f':
-					{
-						output.Append('\\');
-						output.Append('f');
-						break;
-					}
-					case '\n':
-					{
-						output.Append('\\');
-						output.Append('n');
-						break;
-					}
-					case '\r':
-					{
-						output.Append('\\');
-						output.Append('r');
-						break;
-					}
-					case '\t':
-					{
-						output.Append('\\');
-						output.Append('t');
-						break;
-					}
-					default:
-					{
-						if (c < ' ' || c > 255)
-						{
-							hex = "000" + String.Format("X", c);
-							output.Append('\\');
-							output.Append('u');
-							output.Append(hex.Substring(hex.Length - 4));
-						}
-						else
-						{
-							output.Append(c);
-						}
-						break;
-					}
-				}
-			}
-
-			return output.ToString();
-		}
 
 		#region Add(index, value)
 		public void Add(int index, string value)
@@ -967,15 +884,20 @@ namespace MkJSON
 				}
 			}
 		}
+		#endregion
 
+		#region Stringify()
 		public string Stringify()
 		{
 			switch (_type)
 			{
 				case ValueType.Undefined:
-				case ValueType.Null:
 				{
 					return null;
+				}
+				case ValueType.Null:
+				{
+					return "null";
 				}
 				case ValueType.Boolean:
 				{
@@ -1087,6 +1009,83 @@ namespace MkJSON
 					throw new Exception("A bug: unhandled value type");
 				}
 			}
+		}
+
+		public static string EncodeJSONString(string input)
+		{
+			if (input == null || input.Length == 0)
+			{
+				return "";
+			}
+
+			char c;
+			int i;
+			string hex;
+			StringBuilder output = new StringBuilder(input.Length + 4);
+
+			for (i = 0; i < input.Length; i++)
+			{
+				c = input[i];
+
+				switch (c)
+				{
+					case '\\':
+					case '"':
+					case '/':
+					{
+						output.Append('\\');
+						output.Append(c);
+						break;
+					}
+					case '\b':
+					{
+						output.Append('\\');
+						output.Append('b');
+						break;
+					}
+					case '\f':
+					{
+						output.Append('\\');
+						output.Append('f');
+						break;
+					}
+					case '\n':
+					{
+						output.Append('\\');
+						output.Append('n');
+						break;
+					}
+					case '\r':
+					{
+						output.Append('\\');
+						output.Append('r');
+						break;
+					}
+					case '\t':
+					{
+						output.Append('\\');
+						output.Append('t');
+						break;
+					}
+					default:
+					{
+						if (c < ' ' || c > 255)
+						{
+							hex = "000" + String.Format("X", c);
+							output.Append('\\');
+							output.Append('u');
+							output.Append(hex.Substring(hex.Length - 4));
+						}
+						else
+						{
+							output.Append(c);
+						}
+						break;
+					}
+				}
+			}
+
+			return output.ToString();
 		}
 		#endregion
 
@@ -1717,7 +1716,7 @@ namespace MkJSON
 									_errorMessage = "Invalid character } at char " + index;
 									return null;
 								}
-								json.Add(name, parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+								json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								++index;
 								return json;
 							}
@@ -1766,7 +1765,7 @@ namespace MkJSON
 							{
 								if (json.Type == ValueType.Array)
 								{
-									json.Push(parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									json.Push(ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 									++index;
 									return json;
 								}
@@ -1891,11 +1890,11 @@ namespace MkJSON
 							{
 								if (json.Type == ValueType.Array)
 								{
-									json.Push(parseNumberString(builder.ToString(), state == State.Number));
+									json.Push(ParseNumberString(builder.ToString(), state == State.Number));
 								}
 								else
 								{
-									json.Add(name, parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								}
 								state = State.WaitStart;
 								break;
@@ -1955,7 +1954,7 @@ namespace MkJSON
 									_errorMessage = "Invalid character " + c + " at char " + index;
 									return null;
 								}
-								if (!checkStringLiteral(charArray, ref index, c))
+								if (!CheckStringLiteral(charArray, ref index, c))
 								{
 									_errorMessage = "Invalid character " + c + " at char " + index;
 									return null;
@@ -2342,11 +2341,11 @@ namespace MkJSON
 								}
 								if (json.Type == ValueType.Array)
 								{
-									json.Push(parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									json.Push(ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								}
 								else
 								{
-									json.Add(name, parseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								}
 								state = State.WaitNext;
 								break;
@@ -2384,7 +2383,7 @@ namespace MkJSON
 			return json;
 		}
 
-		private static bool checkStringLiteral(char[] charArray, ref int index, char key)
+		private static bool CheckStringLiteral(char[] charArray, ref int index, char key)
 		{
 			char[] stringLiteral = getStringLiteral(key);
 
@@ -2432,33 +2431,25 @@ namespace MkJSON
 			}
 		}
 
-		private static JSON parseNumberString(string number, bool isInteger)
+		private static JSON ParseNumberString(string number, bool isInteger)
 		{
 			if (isInteger)
 			{
-				long value;
-
-				if (long.TryParse(number, out value))
+				if (long.TryParse(number, out long value))
 				{
 					return new JSON(value);
 				}
-				else
-				{
-					return new JSON(ValueType.Null);
-				}
+
+				return new JSON(ValueType.Null);
 			}
 			else
 			{
-				double value;
-
-				if (double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+				if (double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
 				{
 					return new JSON(value);
 				}
-				else
-				{
-					return new JSON(ValueType.Null);
-				}
+
+				return new JSON(ValueType.Null);
 			}
 		}
 		#endregion
