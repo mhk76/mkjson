@@ -2202,7 +2202,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								throw new Exception("Invalid character " + c + " at char " + index;
+								throw new Exception("Invalid character " + c + " at char " + index);
 							}
 						}
 						break;
@@ -2423,7 +2423,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								throw new Exception("Invalid character , at char " + index;
+								throw new Exception("Invalid character , at char " + index);
 							}
 						}
 						break;

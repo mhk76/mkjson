@@ -21,10 +21,7 @@ namespace Test
 
 				try
 				{
-					if (JSON.Parse(json) == null)
-					{
-						Assert.Fail(file + ":" + JSON.ErrorMessage);
-					}
+					JSON.Parse(json);
 				}
 				catch (Exception e)
 				{
