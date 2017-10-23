@@ -234,8 +234,11 @@ namespace Test
 				json.Stringify();
 
 				testItem = "writing a class";
-				Class inClass = new Class();
-				inClass = json.To<Class>();
+				Class toClass = new Class();
+				toClass = json.To<Class>();
+
+				json.Stringify();
+				JSON.From(toClass).Stringify();
 
 
 				testItem = "reading a struct";

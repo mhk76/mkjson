@@ -25,6 +25,8 @@ namespace MkJSON
 		private static readonly char[] __whitespace = new char[] { ' ', '\n', '\r', '\t' };
 		private static readonly Type __jsonType = new JSON().GetType();
 		private static readonly Dictionary<Type, CallMethod> __tryGetValueMethods = GetTryGetValueMethods();
+		private static readonly MethodInfo __getArrayMethod = __jsonType.GetMethod("GetArray", BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly MethodInfo __toMethod = __jsonType.GetMethod("To");
 
 		private static string _errorMessage = null;
 
@@ -1210,7 +1212,7 @@ namespace MkJSON
 
 			foreach (FieldInfo field in output.GetType().GetFields())
 			{
-				if (GetValue(this, field.FieldType, field.Name, out object value, strict))
+				if (GetValue(field.FieldType, field.Name, out object value, strict))
 				{
 					field.SetValueDirect(refOutput, value);
 				}
@@ -1218,7 +1220,7 @@ namespace MkJSON
 
 			foreach (PropertyInfo property in output.GetType().GetProperties())
 			{
-				if (property.CanWrite && GetValue(this, property.PropertyType, property.Name, out object value, strict))
+				if (property.CanWrite && GetValue(property.PropertyType, property.Name, out object value, strict))
 				{
 					property.SetValue(output, value);
 				}
@@ -1227,52 +1229,52 @@ namespace MkJSON
 			return output;
 		}
 
-		private bool GetValue(JSON target, Type type, string name, out object output, bool strict)
+		private bool GetValue(Type type, string name, out object output, bool strict)
 		{
-			if (!target.ContainsKey(name))
+			if (!ContainsKey(name))
 			{
 				output = null;
 				return false;
 			}
 
-			if (type == typeof(bool))
+			if (type == typeof(bool) || type == typeof(bool?))
 			{
-				output = target.GetItem(name).ToBool(strict);
+				output = GetItem(name).ToBool(strict);
 				return true;
 			}
-			if (type == typeof(float))
+			if (type == typeof(float) || type == typeof(float?))
 			{
-				output = target.GetItem(name).ToFloat(strict);
+				output = GetItem(name).ToFloat(strict);
 				return true;
 			}
-			if (type == typeof(double))
+			if (type == typeof(double) || type == typeof(double?))
 			{
-				output = target.GetItem(name).ToDouble(strict);
+				output = GetItem(name).ToDouble(strict);
 				return true;
 			}
-			if (type == typeof(int))
+			if (type == typeof(int) || type == typeof(int?))
 			{
-				output = target.GetItem(name).ToInt(strict);
+				output = GetItem(name).ToInt(strict);
 				return true;
 			}
-			if (type == typeof(long))
+			if (type == typeof(long) || type == typeof(long?))
 			{
-				output = target.GetItem(name).ToLong(strict);
+				output = GetItem(name).ToLong(strict);
 				return true;
 			}
 			if (type == typeof(string))
 			{
-				output = target.GetItem(name).ToString(strict);
+				output = GetItem(name).ToString(strict);
 				return true;
 			}
-			if (type == typeof(DateTime))
+			if (type == typeof(DateTime) || type == typeof(DateTime?))
 			{
-				output = target.GetItem(name).ToDateTime();
+				output = GetItem(name).ToDateTime();
 				return true;
 			}
 			if (type.IsArray)
 			{
-				JSON value = target.GetItem(name);
+				JSON value = GetItem(name);
 
 				if (value.Type != ValueType.Array)
 				{
@@ -1364,7 +1366,9 @@ namespace MkJSON
 				return false;
 			}
 
-			output = target.GetItem(name).To<dynamic>(strict);
+			object[] parameters = new object[] { strict };
+
+			output = __toMethod.MakeGenericMethod(type).Invoke(GetItem(name), parameters);
 
 			if (output.GetType() == type)
 			{
