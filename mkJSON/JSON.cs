@@ -28,21 +28,11 @@ namespace MkJSON
 		private static readonly MethodInfo __getArrayMethod = __jsonType.GetMethod("GetArray", BindingFlags.NonPublic | BindingFlags.Instance);
 		private static readonly MethodInfo __toMethod = __jsonType.GetMethod("To");
 
-		private static string _errorMessage = null;
-
 		private ValueType _type = ValueType.Undefined;
 		private object _value = null;
 		private int _maxIndex = -1;
 
 		#region Properties
-		public static string ErrorMessage
-		{
-			get
-			{
-				return _errorMessage;
-			}
-		}
-
 		public JSON this[int index]
 		{
 			get
@@ -2117,8 +2107,7 @@ namespace MkJSON
 			}
 			if (index < text.Length)
 			{
-				_errorMessage = "Invalid JSON at " + text.Substring(index);
-				return null;
+				throw new Exception("Invalid JSON at " + text.Substring(index));
 			}
 
 			return json;
@@ -2152,8 +2141,7 @@ namespace MkJSON
 									{
 										if (json.Type != ValueType.Array && json.Type != ValueType.Undefined)
 										{
-											_errorMessage = "Invalid character " + c + " at char " + index;
-											return null;
+											throw new Exception("Invalid character " + c + " at char " + index);
 										}
 										json = new JSON(ValueType.Array);
 										state = State.WaitValue;
@@ -2162,8 +2150,7 @@ namespace MkJSON
 									{
 										if (json.Type != ValueType.Object && json.Type != ValueType.Undefined)
 										{
-											_errorMessage = "Invalid character " + c + " at char " + index;
-											return null;
+											throw new Exception("Invalid character " + c + " at char " + index);
 										}
 										json = new JSON(ValueType.Object);
 										state = State.WaitName;
@@ -2215,8 +2202,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character " + c + " at char " + index;
-								return null;
+								throw new Exception("Invalid character " + c + " at char " + index;
 							}
 						}
 						break;
@@ -2232,15 +2218,13 @@ namespace MkJSON
 									++index;
 									return json;
 								}
-								_errorMessage = "Invalid character } at char " + index;
-								return null;
+								throw new Exception("Invalid character } at char " + index);
 							}
 							case State.WaitNext:
 							{
 								if (json.Type != ValueType.Object)
 								{
-									_errorMessage = "Invalid character } at char " + index;
-									return null;
+									throw new Exception("Invalid character } at char " + index);
 								}
 								++index;
 								return json;
@@ -2252,7 +2236,7 @@ namespace MkJSON
 							{
 								if (json.Type == ValueType.Array)
 								{
-									_errorMessage = "Invalid character } at char " + index;
+									throw new Exception("Invalid character } at char " + index);
 									return null;
 								}
 								json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
@@ -2267,8 +2251,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character } at char " + index;
-								return null;
+								throw new Exception("Invalid character } at char " + index);
 							}
 						}
 						break;
@@ -2284,15 +2267,13 @@ namespace MkJSON
 									++index;
 									return json;
 								}
-								_errorMessage = "Invalid character ] at char " + index;
-								return null;
+								throw new Exception("Invalid character ] at char " + index);
 							}
 							case State.WaitNext:
 							{
 								if (json.Type != ValueType.Array)
 								{
-									_errorMessage = "Invalid character } at char " + index;
-									return null;
+									throw new Exception("Invalid character } at char " + index);
 								}
 								++index;
 								return json;
@@ -2308,8 +2289,7 @@ namespace MkJSON
 									++index;
 									return json;
 								}
-								_errorMessage = "Invalid character ] at char " + index;
-								return null;
+								throw new Exception("Invalid character ] at char " + index);
 							}
 							case State.Name:
 							case State.Value:
@@ -2319,8 +2299,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character ] at char " + index;
-								return null;
+								throw new Exception("Invalid character ] at char " + index);
 							}
 						}
 						break;
@@ -2383,8 +2362,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character \" at char " + index;
-								return null;
+								throw new Exception("Invalid character \" at char " + index);
 							}
 						}
 						break;
@@ -2406,8 +2384,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character : at char " + index;
-								return null;
+								throw new Exception("Invalid character : at char " + index);
 							}
 						}
 						break;
@@ -2446,8 +2423,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character , at char " + index;
-								return null;
+								throw new Exception("Invalid character , at char " + index;
 							}
 						}
 						break;
@@ -2471,8 +2447,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character \\ at char " + index;
-								return null;
+								throw new Exception("Invalid character \\ at char " + index);
 							}
 						}
 						break;
@@ -2490,13 +2465,11 @@ namespace MkJSON
 							{
 								if (state == State.WaitStart && json.Type != ValueType.Array)
 								{
-									_errorMessage = "Invalid character " + c + " at char " + index;
-									return null;
+									throw new Exception("Invalid character " + c + " at char " + index);
 								}
 								if (!checkStringLiteral(charArray, ref index, c))
 								{
-									_errorMessage = "Invalid character " + c + " at char " + index;
-									return null;
+									throw new Exception("Invalid character " + c + " at char " + index);
 								}
 
 								JSON value = null;
@@ -2573,8 +2546,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character " + c + " at char " + index;
-								return null;
+								throw new Exception("Invalid character " + c + " at char " + index);
 							}
 						}
 						break;
@@ -2597,7 +2569,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character / at char " + index;
+								throw new Exception("Invalid character / at char " + index);
 								return null;
 							}
 						}
@@ -2622,13 +2594,11 @@ namespace MkJSON
 									++index;
 									if (index == charArray.Length)
 									{
-										_errorMessage = "Unicode character passed the end of data";
-										return null;
+										throw new Exception("Unicode character passed the end of data");
 									}
 									if ("0123456789abcdefABCDEF".IndexOf(charArray[index]) == -1)
 									{
-										_errorMessage = "Invalid unicode literal at char " + index;
-										return null;
+										throw new Exception("Invalid unicode literal at char " + index);
 									}
 									hex.Append(charArray[index]);
 								}
@@ -2638,8 +2608,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character u at char " + index;
-								return null;
+								throw new Exception("Invalid character u at char " + index);
 							}
 						}
 						break;
@@ -2661,8 +2630,7 @@ namespace MkJSON
 							{
 								if (json.Type != ValueType.Array)
 								{
-									_errorMessage = "Invalid character " + c + " at char " + index;
-									return null;
+									throw new Exception("Invalid character " + c + " at char " + index);
 								}
 								builder = new StringBuilder();
 								builder.Append(c);
@@ -2727,8 +2695,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character " + c + " at char " + index;
-								return null;
+								throw new Exception("Invalid character " + c + " at char " + index);
 							}
 						}
 						break;
@@ -2741,8 +2708,7 @@ namespace MkJSON
 							{
 								if (json.Type != ValueType.Array)
 								{
-									_errorMessage = "Invalid character - at char " + index;
-									return null;
+									throw new Exception("Invalid character - at char " + index);
 								}
 								builder = new StringBuilder();
 								builder.Append('-');
@@ -2770,8 +2736,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character - at char " + index;
-								return null;
+								throw new Exception("Invalid character - at char " + index);
 							}
 						}
 						break;
@@ -2793,8 +2758,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character + at char " + index;
-								return null;
+								throw new Exception("Invalid character + at char " + index);
 							}
 						}
 						break;
@@ -2818,8 +2782,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character . at char " + index;
-								return null;
+								throw new Exception("Invalid character . at char " + index);
 							}
 						}
 						break;
@@ -2845,8 +2808,7 @@ namespace MkJSON
 							}
 							default:
 							{
-								_errorMessage = "Invalid character " + c + " at char " + index;
-								return null;
+								throw new Exception("Invalid character " + c + " at char " + index);
 							}
 						}
 						break;
@@ -2863,8 +2825,7 @@ namespace MkJSON
 							{
 								if (!__whitespace.Contains(c))
 								{
-									_errorMessage = "Invalid character at char " + index;
-									return null;
+									throw new Exception("Invalid character at char " + index);
 								}
 								break;
 							}
@@ -2875,8 +2836,7 @@ namespace MkJSON
 							{
 								if (!__whitespace.Contains(c))
 								{
-									_errorMessage = "Invalid character at char " + index;
-									return null;
+									throw new Exception("Invalid character at char " + index);
 								}
 								if (json.Type == ValueType.Array)
 								{
@@ -2894,16 +2854,14 @@ namespace MkJSON
 							{
 								if (c != ' ' && __whitespace.Contains(c))
 								{
-									_errorMessage = "Invalid whitespace character at char " + index;
-									return null;
+									throw new Exception("Invalid whitespace character at char " + index);
 								}
 								builder.Append(c);
 								break;
 							}
 							default:
 							{
-								_errorMessage = "Invalid character at char " + index;
-								return null;
+								throw new Exception("Invalid character at char " + index);
 							}
 						}
 						break;
@@ -2915,8 +2873,7 @@ namespace MkJSON
 
 			if (state != State.End)
 			{
-				_errorMessage = "Invalid JSON";
-				return null;
+				throw new Exception("Invalid JSON");
 			}
 
 			return json;
