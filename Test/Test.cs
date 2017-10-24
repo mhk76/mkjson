@@ -228,25 +228,22 @@ namespace Test
 				Class fromClass = new Class(true);
 				JSON json = JSON.From(fromClass);
 
-				json.Stringify();
-
 				testItem = "writing a class";
 				Class toClass = new Class();
 				toClass = json.To<Class>();
 
-				json.Stringify();
-				JSON.From(toClass).Stringify();
+				Assert.IsTrue(json.Stringify() == JSON.From(toClass).Stringify());
 
 
 				testItem = "reading a struct";
 				Struct fromStruct = new Struct(true);
 				json = JSON.From(fromStruct);
 
-				json.Stringify();
-
 				testItem = "writing a struct";
 				Struct toStruct = new Struct();
 				toStruct = json.To<Struct>();
+
+				Assert.IsTrue(json.Stringify() == JSON.From(toStruct).Stringify());
 			}
 			catch (Exception e)
 			{
@@ -322,11 +319,7 @@ namespace Test
 			{
 				get; set;
 			}
-			public long?[] LongArray
-			{
-				get; set;
-			}
-			public Struct Struct
+			public Struct[] StructArray
 			{
 				get; set;
 			}
@@ -348,10 +341,9 @@ namespace Test
 				Long = 4;
 				String = "Hello, World";
 				Json = new JSON("JSON Object");
-				LongArray = new long?[] { 1, null, 3 };
 				if (self)
 				{
-					Struct = new Struct(false);
+					StructArray = new Struct[] { new Struct(false) };
 					Self = new Class(false);
 				}
 			}
