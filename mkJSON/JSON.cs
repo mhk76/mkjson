@@ -2252,8 +2252,7 @@ namespace MkJSON
 							{
 								if (json.Type == ValueType.Array)
 								{
-									_errorMessage = "Invalid character } at char " + index;
-									return null;
+									throw new Exception("Invalid character } at char " + index);
 								}
 								json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								++index;
