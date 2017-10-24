@@ -72,9 +72,9 @@ namespace Test
 				array.Add(11, date);
 				testItem = "adding to an array an string";
 				array.Add(13, "Hello");
-				testItem = "adding to an array a string object";
+				testItem = "adding to an array a string json object";
 				array.Add(15, new JSON("World"));
-				testItem = "adding to an array index an empty object";
+				testItem = "adding to an array index an empty json object";
 				array[17] = new JSON(JSON.ValueType.Object);
 
 				testItem = "adding to an object a long";
@@ -91,11 +91,11 @@ namespace Test
 				json.Add("date", date);
 				testItem = "adding to an object a string";
 				json.Add("string", "Hello World");
-				testItem = "adding to an object an array object";
+				testItem = "adding to an object an array json object";
 				json.Add("array", array);
-				testItem = "adding to an object a string object";
+				testItem = "adding to an object a string json object";
 				json.Add("Hello", new JSON("World"));
-				testItem = "adding to an object's named property an empty object";
+				testItem = "adding to an object's named property an empty json object";
 				json["object"] = new JSON(JSON.ValueType.Object);
 
 
@@ -168,11 +168,11 @@ namespace Test
 			{
 				JSON json = new JSON();
 
-				testItem = "pushing a string into undefined json";
+				testItem = "pushing a string into undefined json object";
 				json.Push("Hello World!");
-				testItem = "pushing a null into the array";
+				testItem = "pushing a null into the json array";
 				json.Push(JSON.Null);
-				testItem = "pushing an undefined into the array";
+				testItem = "pushing an undefined into the json array";
 				json.Push(JSON.Undefined);
 
 				testItem = "checking property 'Count'";
@@ -193,7 +193,7 @@ namespace Test
 				testItem = "checking property 'Type'";
 				Assert.IsTrue(json.Type == JSON.ValueType.Array);
 
-				testItem = "enumerating the array items";
+				testItem = "enumerating the json array items";
 				int counter = 0;
 				foreach (KeyValuePair<int, JSON> item in json.GetIndexEnumerator())
 				{
@@ -210,7 +210,40 @@ namespace Test
 				testItem = "clearing the array";
 				json.Clear();
 				Assert.IsTrue(json.Count == 0);
+			}
+			catch (Exception e)
+			{
+				Assert.Fail(e.Message + " While " + testItem);
+			}
+		}
 
+		[TestMethod]
+		public void Generic_Types()
+		{
+			string testItem = "initializing";
+
+			try
+			{
+				testItem = "reading a class";
+				Class fromClass = new Class(true);
+				JSON json = JSON.From(fromClass);
+
+				testItem = "writing a class";
+				Class toClass = new Class();
+				toClass = json.To<Class>();
+
+				Assert.IsTrue(json.Stringify() == JSON.From(toClass).Stringify());
+
+
+				testItem = "reading a struct";
+				Struct fromStruct = new Struct(true);
+				json = JSON.From(fromStruct);
+
+				testItem = "writing a struct";
+				Struct toStruct = new Struct();
+				toStruct = json.To<Struct>();
+
+				Assert.IsTrue(json.Stringify() == JSON.From(toStruct).Stringify());
 			}
 			catch (Exception e)
 			{
@@ -221,6 +254,99 @@ namespace Test
 		[TestMethod]
 		public void Error_Checking()
 		{
+		}
+
+		struct Struct
+		{
+			public bool? Bool;
+			public float? Float;
+			public double? Double;
+			public int? Int;
+			public long? Long;
+			public string String;
+			public DateTime? Date;
+			public JSON Json;
+			public Class[] ClassArray;
+		
+			public Struct(bool self)
+			{
+				Bool = false;
+				Float = 11.1f;
+				Double = 22.2d;
+				Int = 33;
+				Long = 44;
+				String = "Well, hello";
+				Date = new DateTime(2000, 1, 1);
+				Json = new JSON("JSON object");
+				if (self)
+				{
+					ClassArray = new Class[] { new Class(false) };
+				}
+				else
+				{
+					ClassArray = new Class[] { };
+				}
+			}
+		}
+
+		class Class
+		{
+			public bool Bool
+			{
+				get; set;
+			}
+			public float Float
+			{
+				get; set;
+			}
+			public double Double
+			{
+				get; set;
+			}
+			public int Int
+			{
+				get; set;
+			}
+			public long Long
+			{
+				get; set;
+			}
+			public string String
+			{
+				get; set;
+			}
+			public JSON Json
+			{
+				get; set;
+			}
+			public Struct[] StructArray
+			{
+				get; set;
+			}
+			public Class Self
+			{
+				get; set;
+			}
+
+			public Class()
+			{
+			}
+
+			public Class(bool self)
+			{
+				Bool = true;
+				Float = 1.1f;
+				Double = 2.2d;
+				Int = 3;
+				Long = 4;
+				String = "Hello, World";
+				Json = new JSON("JSON Object");
+				if (self)
+				{
+					StructArray = new Struct[] { new Struct(false) };
+					Self = new Class(false);
+				}
+			}
 		}
 	}
 }
