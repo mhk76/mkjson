@@ -45,6 +45,22 @@ namespace MkJSON
 			}
 		}
 
+		public static JSON Undefined
+		{
+			get
+			{
+				return new JSON(ValueType.Undefined);
+			}
+		}
+
+		public static JSON Null
+		{
+			get
+			{
+				return new JSON(ValueType.Null);
+			}
+		}
+
 		public bool? Strict { get; set; }
 
 		public JSON this[int index]
@@ -120,22 +136,6 @@ namespace MkJSON
 			get
 			{
 				return _type == ValueType.Array;
-			}
-		}
-
-		public static JSON Undefined
-		{
-			get
-			{
-				return new JSON(ValueType.Undefined);
-			}
-		}
-
-		public static JSON Null
-		{
-			get
-			{
-				return new JSON(ValueType.Null);
 			}
 		}
 
