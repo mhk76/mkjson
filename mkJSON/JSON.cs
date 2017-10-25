@@ -33,6 +33,21 @@ namespace MkJSON
 		private int _maxIndex = -1;
 
 		#region Properties
+		private static bool _strictTraverseAll = true;
+		public static bool StrictTraverseAll
+		{
+			get
+			{
+				return _strictTraverseAll;
+			}
+			set
+			{
+				_strictTraverseAll = value;
+			}
+		}
+
+		public bool? StrictTraverse { get; set; }
+
 		public JSON this[int index]
 		{
 			get
@@ -289,42 +304,42 @@ namespace MkJSON
 		#region Add(index, value)
 		public void Add(int index, string value)
 		{
-			Add(index, new JSON(value));
+			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(int index, bool value)
 		{
-			Add(index, new JSON(value));
+			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(int index, int value)
 		{
-			Add(index, new JSON(value));
+			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(int index, long value)
 		{
-			Add(index, new JSON(value));
+			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(int index, float value)
 		{
-			Add(index, new JSON(value));
+			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(int index, double value)
 		{
-			Add(index, new JSON(value));
+			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(int index, DateTime value)
 		{
-			Add(index, new JSON(value));
+			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add<T>(int index, T value)
 		{
-			Add(index, JSON.From(value));
+			Add(index, JSON.From(value).StrictTraverse = StrictTraverse);
 		}
 
 		public void Add(KeyValuePair<int, JSON> item)
@@ -353,6 +368,8 @@ namespace MkJSON
 				_maxIndex = index;
 			}
 
+			value.StrictTraverse = StrictTraverse;
+
 			if (((SortedDictionary<int, JSON>)_value).ContainsKey(index))
 			{
 				((SortedDictionary<int, JSON>)_value)[index] = value;
@@ -367,42 +384,42 @@ namespace MkJSON
 		#region Add(name, value)
 		public void Add(string name, string value)
 		{
-			Add(name, new JSON(value));
+			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(string name, bool value)
 		{
-			Add(name, new JSON(value));
+			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(string name, int value)
 		{
-			Add(name, new JSON(value));
+			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(string name, long value)
 		{
-			Add(name, new JSON(value));
+			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(string name, float value)
 		{
-			Add(name, new JSON(value));
+			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(string name, double value)
 		{
-			Add(name, new JSON(value));
+			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add(string name, DateTime value)
 		{
-			Add(name, new JSON(value));
+			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
 		}
 
 		public void Add<T>(string name, T value)
 		{
-			Add(name, JSON.From(value));
+			Add(name, JSON.From(value).StrictTraverse = StrictTraverse);
 		}
 
 		public void Add(KeyValuePair<string, JSON> item)
@@ -426,6 +443,8 @@ namespace MkJSON
 			{
 				value = new JSON(ValueType.Undefined);
 			}
+
+			value.StrictTraverse = StrictTraverse;
 
 			if (((Dictionary<string, JSON>)_value).ContainsKey(name))
 			{
@@ -1051,9 +1070,20 @@ namespace MkJSON
 		#region GetItem()
 		public JSON GetItem(int index)
 		{
+			bool strictTraverse = StrictTraverseAll;
+
+			if (StrictTraverse.HasValue)
+			{
+				strictTraverse = StrictTraverse.Value;
+			}
+
 			if (_type != ValueType.Array)
 			{
-				throw new Exception("Can access indices only with an Array");
+				if (strictTraverse)
+				{
+					throw new Exception("Can access indices only with an Array");
+				}
+				return new JSON(ValueType.Undefined) { StrictTraverse = StrictTraverse };
 			}
 			if (index < 0)
 			{
@@ -1065,14 +1095,25 @@ namespace MkJSON
 				return ((SortedDictionary<int, JSON>)_value)[index];
 			}
 
-			return new JSON(ValueType.Undefined);
+			return new JSON(ValueType.Undefined) { StrictTraverse = StrictTraverse };
 		}
 
 		public JSON GetItem(string name)
 		{
 			if (_type != ValueType.Object)
 			{
-				throw new Exception("Can access by named elements only with an Object");
+				bool strictTraverse = StrictTraverseAll;
+
+				if (StrictTraverse.HasValue)
+				{
+					strictTraverse = StrictTraverse.Value;
+				}
+
+				if (strictTraverse)
+				{
+					throw new Exception("Can access by named elements only with an Object");
+				}
+				return new JSON(ValueType.Undefined) { StrictTraverse = StrictTraverse };
 			}
 
 			if (((Dictionary<string, JSON>)_value).ContainsKey(name))
@@ -1080,7 +1121,7 @@ namespace MkJSON
 				return ((Dictionary<string, JSON>)_value)[name];
 			}
 
-			return new JSON(ValueType.Undefined);
+			return new JSON(ValueType.Undefined) { StrictTraverse = StrictTraverse };
 		}
 		#endregion
 

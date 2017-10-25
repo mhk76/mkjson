@@ -175,6 +175,7 @@ namespace Test
 				testItem = "pushing an undefined into the json array";
 				json.Push(JSON.Undefined);
 
+
 				testItem = "checking property 'Count'";
 				Assert.IsTrue(json.Count == 3);
 
@@ -193,6 +194,7 @@ namespace Test
 				testItem = "checking property 'Type'";
 				Assert.IsTrue(json.Type == JSON.ValueType.Array);
 
+
 				testItem = "enumerating the json array items";
 				int counter = 0;
 				foreach (KeyValuePair<int, JSON> item in json.GetIndexEnumerator())
@@ -201,15 +203,39 @@ namespace Test
 				}
 				Assert.IsTrue(counter == 3);
 
+
 				testItem = "testing 'CopyTo' method";
 				KeyValuePair<int, JSON>[] itemArray = new KeyValuePair<int, JSON>[2];
 				json.CopyTo(itemArray, 1);
 				Assert.IsTrue(itemArray[0].Value.Equals(json[1]));
 				Assert.IsTrue(itemArray[1].Value.Equals(json[2]));
 
+
 				testItem = "clearing the array";
 				json.Clear();
 				Assert.IsTrue(json.Count == 0);
+
+
+				testItem = "initalizing json";
+				json = new JSON(JSON.ValueType.Object)
+				{
+					StrictTraverse = false
+				};
+				json.Add(
+					"first",
+					new JSON(JSON.ValueType.Object)
+					{
+						{ "second", new JSON("third") }
+					}
+				);
+				json.Add("array", new JSON(JSON.ValueType.Array));
+
+				testItem = "traversing existing objects (non-strict)";
+				Assert.IsTrue(json["first"]["second"].ToString() == "third");
+				testItem = "traversing non-existing objects (non-strict)";
+				Assert.IsTrue(json["first"]["notExisting"]["shouldBeUndefined"].Type == JSON.ValueType.Undefined);
+				testItem = "traversing non-existing array index (non-strict)";
+				Assert.IsTrue(json["array"][10].Type == JSON.ValueType.Undefined);
 			}
 			catch (Exception e)
 			{
