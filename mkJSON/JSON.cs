@@ -1191,119 +1191,1024 @@ namespace MkJSON
 		}
 		#endregion
 
-		#region Type conversions
-		public bool? ToBool(bool strict = true)
+		#region Parse
+		private enum State
 		{
-			if (TryGetValue(out bool? value, strict))
-			{
-				return value;
-			}
-			return null;
-		}
+			WaitStart,
+			WaitName,
+			WaitValue,
+			Name,
+			WaitColon,
+			Value,
+			StringEscape,
+			Number,
+			WaitNumber,
+			WaitPeriod,
+			WaitDecimal,
+			Decimal,
+			WaitExponentSign,
+			WaitExponent,
+			Exponent,
+			WaitNext,
+			End
+		};
 
-		public DateTime? ToDateTime()
+		public static JSON Parse(string text)
 		{
-			if (TryGetValue(out DateTime? value))
-			{
-				return value;
-			}
-			return null;
-		}
-
-		public double? ToDouble(bool strict = true)
-		{
-			if (TryGetValue(out double? value, strict))
-			{
-				return value;
-			}
-			return null;
-		}
-
-		public float? ToFloat(bool strict = true)
-		{
-			if (TryGetValue(out float? value, strict))
-			{
-				return value;
-			}
-			return null;
-		}
-
-		public int? ToInt(bool strict = true)
-		{
-			if (TryGetValue(out int? value, strict))
-			{
-				return value;
-			}
-			return null;
-		}
-
-		public long? ToLong(bool strict = true)
-		{
-			if (TryGetValue(out long? value, strict))
-			{
-				return value;
-			}
-			return null;
-		}
-
-		public override string ToString()
-		{
-			return ToString(true);
-		}
-
-		public string ToString(bool strict = true)
-		{
-			if (strict && _type != ValueType.String)
+			if (text == null || text.Length == 0)
 			{
 				return null;
 			}
 
-			switch (_type)
+			int index = 0;
+
+			text = text.Trim(__whitespace);
+
+			JSON json = ParsePart(text.ToCharArray(), ref index);
+
+			if (json == null)
 			{
-				case ValueType.Undefined:
-				case ValueType.Null:
+				return null;
+			}
+			if (index < text.Length)
+			{
+				throw new Exception("Invalid JSON at " + text.Substring(index));
+			}
+
+			return json;
+		}
+
+		private static JSON ParsePart(char[] charArray, ref int index)
+		{
+			JSON json = new JSON(ValueType.Undefined);
+			State state = State.WaitStart;
+			StringBuilder builder = null;
+			Stack<State> nextState = new Stack<State>();
+			string name = null;
+			char c;
+
+			while (index < charArray.Length)
+			{
+				c = charArray[index];
+
+				switch (c)
 				{
-					return null;
-				}
-				case ValueType.Boolean:
-				{
-					if ((bool)_value)
+					case '{':
+					case '[':
 					{
-						return "true";
+						switch (state)
+						{
+							case State.WaitStart:
+							{
+								if (json.Count == 0)
+								{
+									if (c == '[')
+									{
+										if (json.Type != ValueType.Array && json.Type != ValueType.Undefined)
+										{
+											throw new Exception("Invalid character " + c + " at char " + index);
+										}
+										json = new JSON(ValueType.Array);
+										state = State.WaitValue;
+									}
+									else
+									{
+										if (json.Type != ValueType.Object && json.Type != ValueType.Undefined)
+										{
+											throw new Exception("Invalid character " + c + " at char " + index);
+										}
+										json = new JSON(ValueType.Object);
+										state = State.WaitName;
+									}
+									break;
+								}
+
+								JSON value = ParsePart(charArray, ref index);
+
+								if (value == null)
+								{
+									return null;
+								}
+								if (json.Type == ValueType.Array)
+								{
+									json.Push(value);
+								}
+								else
+								{
+									json.Add(name, value);
+								}
+								state = State.WaitNext;
+								continue;
+							}
+							case State.WaitValue:
+							{
+								JSON value = ParsePart(charArray, ref index);
+
+								if (value == null)
+								{
+									return null;
+								}
+								if (json.Type == ValueType.Array)
+								{
+									json.Push(value);
+								}
+								else
+								{
+									json.Add(name, value);
+								}
+								state = State.WaitNext;
+								continue;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append(c);
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character " + c + " at char " + index);
+							}
+						}
+						break;
 					}
-					return "false";
+					case '}':
+					{
+						switch (state)
+						{
+							case State.WaitName:
+							{
+								if (json.Count == 0)
+								{
+									++index;
+									return json;
+								}
+								throw new Exception("Invalid character } at char " + index);
+							}
+							case State.WaitNext:
+							{
+								if (json.Type != ValueType.Object)
+								{
+									throw new Exception("Invalid character } at char " + index);
+								}
+								++index;
+								return json;
+							}
+							case State.Number:
+							case State.Decimal:
+							case State.Exponent:
+							case State.WaitPeriod:
+							{
+								if (json.Type == ValueType.Array)
+								{
+									throw new Exception("Invalid character } at char " + index);
+								}
+								json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+								++index;
+								return json;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append('}');
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character } at char " + index);
+							}
+						}
+						break;
+					}
+					case ']':
+					{
+						switch (state)
+						{
+							case State.WaitValue:
+							{
+								if (json.Count == 0)
+								{
+									++index;
+									return json;
+								}
+								throw new Exception("Invalid character ] at char " + index);
+							}
+							case State.WaitNext:
+							{
+								if (json.Type != ValueType.Array)
+								{
+									throw new Exception("Invalid character } at char " + index);
+								}
+								++index;
+								return json;
+							}
+							case State.Number:
+							case State.Decimal:
+							case State.Exponent:
+							case State.WaitPeriod:
+							{
+								if (json.Type == ValueType.Array)
+								{
+									json.Push(ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									++index;
+									return json;
+								}
+								throw new Exception("Invalid character ] at char " + index);
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append(']');
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character ] at char " + index);
+							}
+						}
+						break;
+					}
+					case '"':
+					{
+						switch (state)
+						{
+							case State.WaitStart:
+							{
+								builder = new StringBuilder();
+								name = null;
+								if (json.Type == ValueType.Array)
+								{
+									state = State.Value;
+								}
+								else
+								{
+									state = State.Name;
+								}
+								break;
+							}
+							case State.WaitName:
+							{
+								builder = new StringBuilder();
+								name = null;
+								state = State.Name;
+								break;
+							}
+							case State.WaitValue:
+							{
+								builder = new StringBuilder();
+								state = State.Value;
+								break;
+							}
+							case State.Name:
+							{
+								name = builder.ToString();
+								state = State.WaitColon;
+								break;
+							}
+							case State.Value:
+							{
+								if (json.Type == ValueType.Array)
+								{
+									json.Push(new JSON(builder.ToString()));
+								}
+								else
+								{
+									json.Add(name, new JSON(builder.ToString()));
+								}
+								state = State.WaitNext;
+								break;
+							}
+							case State.StringEscape:
+							{
+								builder.Append('"');
+								state = nextState.Pop();
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character \" at char " + index);
+							}
+						}
+						break;
+					}
+					case ':':
+					{
+						switch (state)
+						{
+							case State.WaitColon:
+							{
+								state = State.WaitValue;
+								break;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append(':');
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character : at char " + index);
+							}
+						}
+						break;
+					}
+					case ',':
+					{
+						switch (state)
+						{
+							case State.WaitNext:
+							{
+								name = null;
+								state = State.WaitStart;
+								break;
+							}
+							case State.Number:
+							case State.Decimal:
+							case State.Exponent:
+							case State.WaitPeriod:
+							{
+								if (json.Type == ValueType.Array)
+								{
+									json.Push(ParseNumberString(builder.ToString(), state == State.Number));
+								}
+								else
+								{
+									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+								}
+								state = State.WaitStart;
+								break;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append(',');
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character , at char " + index);
+							}
+						}
+						break;
+					}
+					case '\\':
+					{
+						switch (state)
+						{
+							case State.Name:
+							case State.Value:
+							{
+								nextState.Push(state);
+								state = State.StringEscape;
+								break;
+							}
+							case State.StringEscape:
+							{
+								builder.Append('\\');
+								state = nextState.Pop();
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character \\ at char " + index);
+							}
+						}
+						break;
+					}
+					case 'b':
+					case 'f':
+					case 'n':
+					case 'r':
+					case 't':
+					{
+						switch (state)
+						{
+							case State.WaitStart:
+							case State.WaitValue:
+							{
+								if (state == State.WaitStart && json.Type != ValueType.Array)
+								{
+									throw new Exception("Invalid character " + c + " at char " + index);
+								}
+								if (!CheckStringLiteral(charArray, ref index, c))
+								{
+									throw new Exception("Invalid character " + c + " at char " + index);
+								}
+
+								JSON value = null;
+
+								switch (c)
+								{
+									case 't':
+									{
+										value = new JSON(true);
+										break;
+									}
+									case 'f':
+									{
+										value = new JSON(false);
+										break;
+									}
+									case 'n':
+									{
+										value = new JSON((string)null);
+										break;
+									}
+								}
+
+								if (json.Type == ValueType.Array)
+								{
+									json.Push(value);
+								}
+								else
+								{
+									json.Add(name, value);
+								}
+
+								state = State.WaitNext;
+								continue;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append(c);
+								break;
+							}
+							case State.StringEscape:
+							{
+								switch (c)
+								{
+									case 'b':
+									{
+										builder.Append('\b');
+										break;
+									}
+									case 'f':
+									{
+										builder.Append('\f');
+										break;
+									}
+									case 'n':
+									{
+										builder.Append('\n');
+										break;
+									}
+									case 'r':
+									{
+										builder.Append('\r');
+										break;
+									}
+									case 't':
+									{
+										builder.Append('\t');
+										break;
+									}
+								}
+								state = nextState.Pop();
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character " + c + " at char " + index);
+							}
+						}
+						break;
+					}
+					case '/':
+					{
+						switch (state)
+						{
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append(c);
+								break;
+							}
+							case State.StringEscape:
+							{
+								builder.Append('/');
+								state = nextState.Pop();
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character / at char " + index);
+							}
+						}
+						break;
+					}
+					case 'u':
+					{
+						switch (state)
+						{
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append('u');
+								break;
+							}
+							case State.StringEscape:
+							{
+								StringBuilder hex = new StringBuilder();
+
+								for (int i = 0; i < 4; i++)
+								{
+									++index;
+									if (index == charArray.Length)
+									{
+										throw new Exception("Unicode character passed the end of data");
+									}
+									if ("0123456789abcdefABCDEF".IndexOf(charArray[index]) == -1)
+									{
+										throw new Exception("Invalid unicode literal at char " + index);
+									}
+									hex.Append(charArray[index]);
+								}
+								builder.Append((char)int.Parse(hex.ToString(), NumberStyles.HexNumber));
+								state = nextState.Pop();
+								continue;
+							}
+							default:
+							{
+								throw new Exception("Invalid character u at char " + index);
+							}
+						}
+						break;
+					}
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+					{
+						switch (state)
+						{
+							case State.WaitStart:
+							{
+								if (json.Type != ValueType.Array)
+								{
+									throw new Exception("Invalid character " + c + " at char " + index);
+								}
+								builder = new StringBuilder();
+								builder.Append(c);
+								if (c == '0')
+								{
+									state = State.WaitPeriod;
+								}
+								else
+								{
+									state = State.Number;
+								}
+								break;
+							}
+							case State.WaitValue:
+							{
+								builder = new StringBuilder();
+								builder.Append(c);
+								if (c == '0')
+								{
+									state = State.WaitPeriod;
+								}
+								else
+								{
+									state = State.Number;
+								}
+								break;
+							}
+							case State.WaitNumber:
+							{
+								builder.Append(c);
+								if (c == '0')
+								{
+									state = State.WaitPeriod;
+								}
+								else
+								{
+									state = State.Number;
+								}
+								break;
+							}
+							case State.WaitDecimal:
+							{
+								builder.Append(c);
+								state = State.Decimal;
+								break;
+							}
+							case State.WaitExponentSign:
+							case State.WaitExponent:
+							{
+								builder.Append(c);
+								state = State.Exponent;
+								break;
+							}
+							case State.Name:
+							case State.Value:
+							case State.Number:
+							case State.Decimal:
+							case State.Exponent:
+							{
+								builder.Append(c);
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character " + c + " at char " + index);
+							}
+						}
+						break;
+					}
+					case '-':
+					{
+						switch (state)
+						{
+							case State.WaitStart:
+							{
+								if (json.Type != ValueType.Array)
+								{
+									throw new Exception("Invalid character - at char " + index);
+								}
+								builder = new StringBuilder();
+								builder.Append('-');
+								state = State.WaitNumber;
+								break;
+							}
+							case State.WaitValue:
+							{
+								builder = new StringBuilder();
+								builder.Append('-');
+								state = State.WaitNumber;
+								break;
+							}
+							case State.WaitExponentSign:
+							{
+								builder.Append('-');
+								state = State.WaitExponent;
+								break;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append('-');
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character - at char " + index);
+							}
+						}
+						break;
+					}
+					case '+':
+					{
+						switch (state)
+						{
+							case State.WaitExponentSign:
+							{
+								state = State.WaitExponent;
+								break;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append('+');
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character + at char " + index);
+							}
+						}
+						break;
+					}
+					case '.':
+					{
+						switch (state)
+						{
+							case State.WaitPeriod:
+							case State.Number:
+							{
+								builder.Append('.');
+								state = State.WaitDecimal;
+								break;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append('.');
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character . at char " + index);
+							}
+						}
+						break;
+					}
+					case 'e':
+					case 'E':
+					{
+						switch (state)
+						{
+							case State.Number:
+							case State.Decimal:
+							case State.WaitPeriod:
+							{
+								builder.Append('e');
+								state = State.WaitExponentSign;
+								break;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								builder.Append(c);
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character " + c + " at char " + index);
+							}
+						}
+						break;
+					}
+					default:
+					{
+						switch (state)
+						{
+							case State.WaitStart:
+							case State.WaitName:
+							case State.WaitColon:
+							case State.WaitValue:
+							case State.WaitNext:
+							{
+								if (!__whitespace.Contains(c))
+								{
+									throw new Exception("Invalid character at char " + index);
+								}
+								break;
+							}
+							case State.Number:
+							case State.Decimal:
+							case State.Exponent:
+							case State.WaitPeriod:
+							{
+								if (!__whitespace.Contains(c))
+								{
+									throw new Exception("Invalid character at char " + index);
+								}
+								if (json.Type == ValueType.Array)
+								{
+									json.Push(ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+								}
+								else
+								{
+									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+								}
+								state = State.WaitNext;
+								break;
+							}
+							case State.Name:
+							case State.Value:
+							{
+								if (c != ' ' && __whitespace.Contains(c))
+								{
+									throw new Exception("Invalid whitespace character at char " + index);
+								}
+								builder.Append(c);
+								break;
+							}
+							default:
+							{
+								throw new Exception("Invalid character at char " + index);
+							}
+						}
+						break;
+					}
 				}
-				case ValueType.String:
+
+				++index;
+			}
+
+			if (state != State.End)
+			{
+				throw new Exception("Invalid JSON");
+			}
+
+			return json;
+		}
+
+		private static bool CheckStringLiteral(char[] charArray, ref int index, char key)
+		{
+			char[] stringLiteral = getStringLiteral(key);
+
+			if (stringLiteral == null)
+			{
+				return false;
+			}
+
+			for (int i = 0; i < stringLiteral.Length; i++)
+			{
+				if (index == charArray.Length)
 				{
-					return (string)_value;
+					return false;
 				}
-				case ValueType.Integer:
+				if (stringLiteral[i] != charArray[index])
 				{
-					return ((long)_value).ToString();
+					return false;
 				}
-				case ValueType.Float:
+				++index;
+			}
+
+			return true;
+		}
+
+		private static char[] getStringLiteral(char key)
+		{
+			switch (key)
+			{
+				case 't':
 				{
-					return ((double)_value).ToString(CultureInfo.InvariantCulture).Replace("+", "").ToLower();
+					return "true".ToCharArray();
 				}
-				case ValueType.Object:
-				case ValueType.Array:
+				case 'f':
 				{
-					return Stringify();
+					return "false".ToCharArray();
+				}
+				case 'n':
+				{
+					return "null".ToCharArray();
 				}
 				default:
 				{
-					throw new Exception("A bug: Unhandled value type");
+					return null;
 				}
 			}
 		}
 
-		public T To<T>(bool strict = true) where T : new()
+		private static JSON ParseNumberString(string number, bool isInteger)
 		{
-			if (TryGetValue(out T value, strict))
+			if (isInteger)
 			{
-				return value;
+				if (long.TryParse(number, out long value))
+				{
+					return new JSON(value);
+				}
+
+				return new JSON(ValueType.Null);
 			}
-			return default(T);
+			else
+			{
+				if (double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
+				{
+					return new JSON(value);
+				}
+
+				return new JSON(ValueType.Null);
+			}
+		}
+		#endregion
+
+		#region Push(value)
+		public void Push(string value)
+		{
+			Push(new JSON(value));
+		}
+
+		public void Push(bool value)
+		{
+			Push(new JSON(value));
+		}
+
+		public void Push(int value)
+		{
+			Push(new JSON(value));
+		}
+
+		public void Push(long value)
+		{
+			Push(new JSON(value));
+		}
+
+		public void Push(float value)
+		{
+			Push(new JSON(value));
+		}
+
+		public void Push(double value)
+		{
+			Push(new JSON(value));
+		}
+
+		public void Push(DateTime value)
+		{
+			Push(new JSON(value));
+		}
+
+		public void Push(JSON value)
+		{
+			if (_type == ValueType.Undefined)
+			{
+				_value = new SortedDictionary<int, JSON>();
+				_type = ValueType.Array;
+			}
+			else if (_type != ValueType.Array)
+			{
+				throw new Exception("Can push only to an Array");
+			}
+
+			++_maxIndex;
+			((SortedDictionary<int, JSON>)_value).Add(_maxIndex, value);
+		}
+		#endregion
+
+		#region Remove()
+		public bool Remove(int index)
+		{
+			if (_value != null && _type == ValueType.Array)
+			{
+				SortedDictionary<int, JSON> list = (SortedDictionary<int, JSON>)_value;
+
+				if (list.ContainsKey(index))
+				{
+					list.Remove(index);
+
+					if (index == _maxIndex)
+					{
+						if (list.Count > 0)
+						{
+							_maxIndex = list.Last().Key;
+						}
+						else
+						{
+							_maxIndex = -1;
+						}
+					}
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool Remove(string name)
+		{
+			if (_value != null && _type == ValueType.Object)
+			{
+				Dictionary<string, JSON> list = (Dictionary<string, JSON>)_value;
+
+				if (list.ContainsKey(name))
+				{
+					list.Remove(name);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool Remove(KeyValuePair<int, JSON> item)
+		{
+			if (_value != null && _type == ValueType.Array)
+			{
+				SortedDictionary<int, JSON> list = (SortedDictionary<int, JSON>)_value;
+
+				if (list.ContainsKey(item.Key) && list[item.Key] == item.Value)
+				{
+					list.Remove(item.Key);
+
+					if (item.Key == _maxIndex)
+					{
+						if (list.Count > 0)
+						{
+							_maxIndex = list.Last().Key;
+						}
+						else
+						{
+							_maxIndex = -1;
+						}
+					}
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool Remove(KeyValuePair<string, JSON> item)
+		{
+			if (_value != null && _type == ValueType.Object)
+			{
+				Dictionary<string, JSON> list = (Dictionary<string, JSON>)_value;
+
+				if (list.ContainsKey(item.Key) && list[item.Key] == item.Value)
+				{
+					list.Remove(item.Key);
+					return true;
+				}
+			}
+			return false;
 		}
 		#endregion
 
@@ -1510,142 +2415,119 @@ namespace MkJSON
 		}
 		#endregion
 
-		#region Push(value)
-		public void Push(string value)
+		#region Type conversions
+		public bool? ToBool(bool strict = true)
 		{
-			Push(new JSON(value));
-		}
-
-		public void Push(bool value)
-		{
-			Push(new JSON(value));
-		}
-
-		public void Push(int value)
-		{
-			Push(new JSON(value));
-		}
-
-		public void Push(long value)
-		{
-			Push(new JSON(value));
-		}
-
-		public void Push(float value)
-		{
-			Push(new JSON(value));
-		}
-
-		public void Push(double value)
-		{
-			Push(new JSON(value));
-		}
-
-		public void Push(DateTime value)
-		{
-			Push(new JSON(value));
-		}
-
-		public void Push(JSON value)
-		{
-			if (_type == ValueType.Undefined)
+			if (TryGetValue(out bool? value, strict))
 			{
-				_value = new SortedDictionary<int, JSON>();
-				_type = ValueType.Array;
+				return value;
 			}
-			else if (_type != ValueType.Array)
+			return null;
+		}
+
+		public DateTime? ToDateTime()
+		{
+			if (TryGetValue(out DateTime? value))
 			{
-				throw new Exception("Can push only to an Array");
+				return value;
+			}
+			return null;
+		}
+
+		public double? ToDouble(bool strict = true)
+		{
+			if (TryGetValue(out double? value, strict))
+			{
+				return value;
+			}
+			return null;
+		}
+
+		public float? ToFloat(bool strict = true)
+		{
+			if (TryGetValue(out float? value, strict))
+			{
+				return value;
+			}
+			return null;
+		}
+
+		public int? ToInt(bool strict = true)
+		{
+			if (TryGetValue(out int? value, strict))
+			{
+				return value;
+			}
+			return null;
+		}
+
+		public long? ToLong(bool strict = true)
+		{
+			if (TryGetValue(out long? value, strict))
+			{
+				return value;
+			}
+			return null;
+		}
+
+		public override string ToString()
+		{
+			return ToString(true);
+		}
+
+		public string ToString(bool strict = true)
+		{
+			if (strict && _type != ValueType.String)
+			{
+				return null;
 			}
 
-			++_maxIndex;
-			((SortedDictionary<int, JSON>)_value).Add(_maxIndex, value);
-		}
-		#endregion
-
-		#region Remove()
-		public bool Remove(int index)
-		{
-			if (_value != null && _type == ValueType.Array)
+			switch (_type)
 			{
-				SortedDictionary<int, JSON> list = (SortedDictionary<int, JSON>)_value;
-
-				if (list.ContainsKey(index))
+				case ValueType.Undefined:
+				case ValueType.Null:
 				{
-					list.Remove(index);
-
-					if (index == _maxIndex)
+					return null;
+				}
+				case ValueType.Boolean:
+				{
+					if ((bool)_value)
 					{
-						if (list.Count > 0)
-						{
-							_maxIndex = list.Last().Key;
-						}
-						else
-						{
-							_maxIndex = -1;
-						}
+						return "true";
 					}
-					return true;
+					return "false";
+				}
+				case ValueType.String:
+				{
+					return (string)_value;
+				}
+				case ValueType.Integer:
+				{
+					return ((long)_value).ToString();
+				}
+				case ValueType.Float:
+				{
+					return ((double)_value).ToString(CultureInfo.InvariantCulture).Replace("+", "").ToLower();
+				}
+				case ValueType.Object:
+				case ValueType.Array:
+				{
+					return Stringify();
+				}
+				default:
+				{
+					throw new Exception("A bug: Unhandled value type");
 				}
 			}
-			return false;
 		}
 
-		public bool Remove(string name)
+		public T To<T>(bool strict = true) where T : new()
 		{
-			if (_value != null && _type == ValueType.Object)
+			if (TryGetValue(out T value, strict))
 			{
-				Dictionary<string, JSON> list = (Dictionary<string, JSON>)_value;
-
-				if (list.ContainsKey(name))
-				{
-					list.Remove(name);
-					return true;
-				}
+				return value;
 			}
-			return false;
-		}
-
-		public bool Remove(KeyValuePair<int, JSON> item)
-		{
-			if (_value != null && _type == ValueType.Array)
-			{
-				SortedDictionary<int, JSON> list = (SortedDictionary<int, JSON>)_value;
-
-				if (list.ContainsKey(item.Key) && list[item.Key] == item.Value)
-				{
-					list.Remove(item.Key);
-
-					if (item.Key == _maxIndex)
-					{
-						if (list.Count > 0)
-						{
-							_maxIndex = list.Last().Key;
-						}
-						else
-						{
-							_maxIndex = -1;
-						}
-					}
-					return true;
-				}
-			}
-			return false;
-		}
-
-		public bool Remove(KeyValuePair<string, JSON> item)
-		{
-			if (_value != null && _type == ValueType.Object)
-			{
-				Dictionary<string, JSON> list = (Dictionary<string, JSON>)_value;
-
-				if (list.ContainsKey(item.Key) && list[item.Key] == item.Value)
-				{
-					list.Remove(item.Key);
-					return true;
-				}
-			}
-			return false;
+			return default(T);
 		}
 		#endregion
 
@@ -2186,889 +3068,6 @@ namespace MkJSON
 			}
 
 			return output.ToArray();
-		}
-		#endregion
-
-		#region Parse
-		private enum State
-		{
-			WaitStart,
-			WaitName,
-			WaitValue,
-			Name,
-			WaitColon,
-			Value,
-			StringEscape,
-			Number,
-			WaitNumber,
-			WaitPeriod,
-			WaitDecimal,
-			Decimal,
-			WaitExponentSign,
-			WaitExponent,
-			Exponent,
-			WaitNext,
-			End
-		};
-
-		public static JSON Parse(string text)
-		{
-			if (text == null || text.Length == 0)
-			{
-				return null;
-			}
-
-			int index = 0;
-
-			text = text.Trim(__whitespace);
-
-			JSON json = ParsePart(text.ToCharArray(), ref index);
-
-			if (json == null)
-			{
-				return null;
-			}
-			if (index < text.Length)
-			{
-				throw new Exception("Invalid JSON at " + text.Substring(index));
-			}
-
-			return json;
-		}
-
-		private static JSON ParsePart(char[] charArray, ref int index)
-		{
-			JSON json = new JSON(ValueType.Undefined);
-			State state = State.WaitStart;
-			StringBuilder builder = null;
-			Stack<State> nextState = new Stack<State>();
-			string name = null;
-			char c;
-
-			while (index < charArray.Length)
-			{
-				c = charArray[index];
-
-				switch (c)
-				{
-					case '{':
-					case '[':
-					{
-						switch (state)
-						{
-							case State.WaitStart:
-							{
-								if (json.Count == 0)
-								{
-									if (c == '[')
-									{
-										if (json.Type != ValueType.Array && json.Type != ValueType.Undefined)
-										{
-											throw new Exception("Invalid character " + c + " at char " + index);
-										}
-										json = new JSON(ValueType.Array);
-										state = State.WaitValue;
-									}
-									else
-									{
-										if (json.Type != ValueType.Object && json.Type != ValueType.Undefined)
-										{
-											throw new Exception("Invalid character " + c + " at char " + index);
-										}
-										json = new JSON(ValueType.Object);
-										state = State.WaitName;
-									}
-									break;
-								}
-
-								JSON value = ParsePart(charArray, ref index);
-
-								if (value == null)
-								{
-									return null;
-								}
-								if (json.Type == ValueType.Array)
-								{
-									json.Push(value);
-								}
-								else
-								{
-									json.Add(name, value);
-								}
-								state = State.WaitNext;
-								continue;
-							}
-							case State.WaitValue:
-							{
-								JSON value = ParsePart(charArray, ref index);
-
-								if (value == null)
-								{
-									return null;
-								}
-								if (json.Type == ValueType.Array)
-								{
-									json.Push(value);
-								}
-								else
-								{
-									json.Add(name, value);
-								}
-								state = State.WaitNext;
-								continue;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append(c);
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character " + c + " at char " + index);
-							}
-						}
-						break;
-					}
-					case '}':
-					{
-						switch (state)
-						{
-							case State.WaitName:
-							{
-								if (json.Count == 0)
-								{
-									++index;
-									return json;
-								}
-								throw new Exception("Invalid character } at char " + index);
-							}
-							case State.WaitNext:
-							{
-								if (json.Type != ValueType.Object)
-								{
-									throw new Exception("Invalid character } at char " + index);
-								}
-								++index;
-								return json;
-							}
-							case State.Number:
-							case State.Decimal:
-							case State.Exponent:
-							case State.WaitPeriod:
-							{
-								if (json.Type == ValueType.Array)
-								{
-									throw new Exception("Invalid character } at char " + index);
-								}
-								json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
-								++index;
-								return json;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append('}');
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character } at char " + index);
-							}
-						}
-						break;
-					}
-					case ']':
-					{
-						switch (state)
-						{
-							case State.WaitValue:
-							{
-								if (json.Count == 0)
-								{
-									++index;
-									return json;
-								}
-								throw new Exception("Invalid character ] at char " + index);
-							}
-							case State.WaitNext:
-							{
-								if (json.Type != ValueType.Array)
-								{
-									throw new Exception("Invalid character } at char " + index);
-								}
-								++index;
-								return json;
-							}
-							case State.Number:
-							case State.Decimal:
-							case State.Exponent:
-							case State.WaitPeriod:
-							{
-								if (json.Type == ValueType.Array)
-								{
-									json.Push(ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
-									++index;
-									return json;
-								}
-								throw new Exception("Invalid character ] at char " + index);
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append(']');
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character ] at char " + index);
-							}
-						}
-						break;
-					}
-					case '"':
-					{
-						switch (state)
-						{
-							case State.WaitStart:
-							{
-								builder = new StringBuilder();
-								name = null;
-								if (json.Type == ValueType.Array)
-								{
-									state = State.Value;
-								}
-								else
-								{
-									state = State.Name;
-								}
-								break;
-							}
-							case State.WaitName:
-							{
-								builder = new StringBuilder();
-								name = null;
-								state = State.Name;
-								break;
-							}
-							case State.WaitValue:
-							{
-								builder = new StringBuilder();
-								state = State.Value;
-								break;
-							}
-							case State.Name:
-							{
-								name = builder.ToString();
-								state = State.WaitColon;
-								break;
-							}
-							case State.Value:
-							{
-								if (json.Type == ValueType.Array)
-								{
-									json.Push(new JSON(builder.ToString()));
-								}
-								else
-								{
-									json.Add(name, new JSON(builder.ToString()));
-								}
-								state = State.WaitNext;
-								break;
-							}
-							case State.StringEscape:
-							{
-								builder.Append('"');
-								state = nextState.Pop();
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character \" at char " + index);
-							}
-						}
-						break;
-					}
-					case ':':
-					{
-						switch (state)
-						{
-							case State.WaitColon:
-							{
-								state = State.WaitValue;
-								break;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append(':');
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character : at char " + index);
-							}
-						}
-						break;
-					}
-					case ',':
-					{
-						switch (state)
-						{
-							case State.WaitNext:
-							{
-								name = null;
-								state = State.WaitStart;
-								break;
-							}
-							case State.Number:
-							case State.Decimal:
-							case State.Exponent:
-							case State.WaitPeriod:
-							{
-								if (json.Type == ValueType.Array)
-								{
-									json.Push(ParseNumberString(builder.ToString(), state == State.Number));
-								}
-								else
-								{
-									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
-								}
-								state = State.WaitStart;
-								break;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append(',');
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character , at char " + index);
-							}
-						}
-						break;
-					}
-					case '\\':
-					{
-						switch (state)
-						{
-							case State.Name:
-							case State.Value:
-							{
-								nextState.Push(state);
-								state = State.StringEscape;
-								break;
-							}
-							case State.StringEscape:
-							{
-								builder.Append('\\');
-								state = nextState.Pop();
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character \\ at char " + index);
-							}
-						}
-						break;
-					}
-					case 'b':
-					case 'f':
-					case 'n':
-					case 'r':
-					case 't':
-					{
-						switch (state)
-						{
-							case State.WaitStart:
-							case State.WaitValue:
-							{
-								if (state == State.WaitStart && json.Type != ValueType.Array)
-								{
-									throw new Exception("Invalid character " + c + " at char " + index);
-								}
-								if (!CheckStringLiteral(charArray, ref index, c))
-								{
-									throw new Exception("Invalid character " + c + " at char " + index);
-								}
-
-								JSON value = null;
-
-								switch (c)
-								{
-									case 't':
-									{
-										value = new JSON(true);
-										break;
-									}
-									case 'f':
-									{
-										value = new JSON(false);
-										break;
-									}
-									case 'n':
-									{
-										value = new JSON((string)null);
-										break;
-									}
-								}
-
-								if (json.Type == ValueType.Array)
-								{
-									json.Push(value);
-								}
-								else
-								{
-									json.Add(name, value);
-								}
-
-								state = State.WaitNext;
-								continue;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append(c);
-								break;
-							}
-							case State.StringEscape:
-							{
-								switch (c)
-								{
-									case 'b':
-									{
-										builder.Append('\b');
-										break;
-									}
-									case 'f':
-									{
-										builder.Append('\f');
-										break;
-									}
-									case 'n':
-									{
-										builder.Append('\n');
-										break;
-									}
-									case 'r':
-									{
-										builder.Append('\r');
-										break;
-									}
-									case 't':
-									{
-										builder.Append('\t');
-										break;
-									}
-								}
-								state = nextState.Pop();
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character " + c + " at char " + index);
-							}
-						}
-						break;
-					}
-					case '/':
-					{
-						switch (state)
-						{
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append(c);
-								break;
-							}
-							case State.StringEscape:
-							{
-								builder.Append('/');
-								state = nextState.Pop();
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character / at char " + index);
-								return null;
-							}
-						}
-						break;
-					}
-					case 'u':
-					{
-						switch (state)
-						{
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append('u');
-								break;
-							}
-							case State.StringEscape:
-							{
-								StringBuilder hex = new StringBuilder();
-
-								for (int i = 0; i < 4; i++)
-								{
-									++index;
-									if (index == charArray.Length)
-									{
-										throw new Exception("Unicode character passed the end of data");
-									}
-									if ("0123456789abcdefABCDEF".IndexOf(charArray[index]) == -1)
-									{
-										throw new Exception("Invalid unicode literal at char " + index);
-									}
-									hex.Append(charArray[index]);
-								}
-								builder.Append((char)int.Parse(hex.ToString(), NumberStyles.HexNumber));
-								state = nextState.Pop();
-								continue;
-							}
-							default:
-							{
-								throw new Exception("Invalid character u at char " + index);
-							}
-						}
-						break;
-					}
-					case '0':
-					case '1':
-					case '2':
-					case '3':
-					case '4':
-					case '5':
-					case '6':
-					case '7':
-					case '8':
-					case '9':
-					{
-						switch (state)
-						{
-							case State.WaitStart:
-							{
-								if (json.Type != ValueType.Array)
-								{
-									throw new Exception("Invalid character " + c + " at char " + index);
-								}
-								builder = new StringBuilder();
-								builder.Append(c);
-								if (c == '0')
-								{
-									state = State.WaitPeriod;
-								}
-								else
-								{
-									state = State.Number;
-								}
-								break;
-							}
-							case State.WaitValue:
-							{
-								builder = new StringBuilder();
-								builder.Append(c);
-								if (c == '0')
-								{
-									state = State.WaitPeriod;
-								}
-								else
-								{
-									state = State.Number;
-								}
-								break;
-							}
-							case State.WaitNumber:
-							{
-								builder.Append(c);
-								if (c == '0')
-								{
-									state = State.WaitPeriod;
-								}
-								else
-								{
-									state = State.Number;
-								}
-								break;
-							}
-							case State.WaitDecimal:
-							{
-								builder.Append(c);
-								state = State.Decimal;
-								break;
-							}
-							case State.WaitExponentSign:
-							case State.WaitExponent:
-							{
-								builder.Append(c);
-								state = State.Exponent;
-								break;
-							}
-							case State.Name:
-							case State.Value:
-							case State.Number:
-							case State.Decimal:
-							case State.Exponent:
-							{
-								builder.Append(c);
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character " + c + " at char " + index);
-							}
-						}
-						break;
-					}
-					case '-':
-					{
-						switch (state)
-						{
-							case State.WaitStart:
-							{
-								if (json.Type != ValueType.Array)
-								{
-									throw new Exception("Invalid character - at char " + index);
-								}
-								builder = new StringBuilder();
-								builder.Append('-');
-								state = State.WaitNumber;
-								break;
-							}
-							case State.WaitValue:
-							{
-								builder = new StringBuilder();
-								builder.Append('-');
-								state = State.WaitNumber;
-								break;
-							}
-							case State.WaitExponentSign:
-							{
-								builder.Append('-');
-								state = State.WaitExponent;
-								break;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append('-');
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character - at char " + index);
-							}
-						}
-						break;
-					}
-					case '+':
-					{
-						switch (state)
-						{
-							case State.WaitExponentSign:
-							{
-								state = State.WaitExponent;
-								break;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append('+');
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character + at char " + index);
-							}
-						}
-						break;
-					}
-					case '.':
-					{
-						switch (state)
-						{
-							case State.WaitPeriod:
-							case State.Number:
-							{
-								builder.Append('.');
-								state = State.WaitDecimal;
-								break;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append('.');
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character . at char " + index);
-							}
-						}
-						break;
-					}
-					case 'e':
-					case 'E':
-					{
-						switch (state)
-						{
-							case State.Number:
-							case State.Decimal:
-							case State.WaitPeriod:
-							{
-								builder.Append('e');
-								state = State.WaitExponentSign;
-								break;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								builder.Append(c);
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character " + c + " at char " + index);
-							}
-						}
-						break;
-					}
-					default:
-					{
-						switch (state)
-						{
-							case State.WaitStart:
-							case State.WaitName:
-							case State.WaitColon:
-							case State.WaitValue:
-							case State.WaitNext:
-							{
-								if (!__whitespace.Contains(c))
-								{
-									throw new Exception("Invalid character at char " + index);
-								}
-								break;
-							}
-							case State.Number:
-							case State.Decimal:
-							case State.Exponent:
-							case State.WaitPeriod:
-							{
-								if (!__whitespace.Contains(c))
-								{
-									throw new Exception("Invalid character at char " + index);
-								}
-								if (json.Type == ValueType.Array)
-								{
-									json.Push(ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
-								}
-								else
-								{
-									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
-								}
-								state = State.WaitNext;
-								break;
-							}
-							case State.Name:
-							case State.Value:
-							{
-								if (c != ' ' && __whitespace.Contains(c))
-								{
-									throw new Exception("Invalid whitespace character at char " + index);
-								}
-								builder.Append(c);
-								break;
-							}
-							default:
-							{
-								throw new Exception("Invalid character at char " + index);
-							}
-						}
-						break;
-					}
-				}
-
-				++index;
-			}
-
-			if (state != State.End)
-			{
-				throw new Exception("Invalid JSON");
-			}
-
-			return json;
-		}
-
-		private static bool CheckStringLiteral(char[] charArray, ref int index, char key)
-		{
-			char[] stringLiteral = getStringLiteral(key);
-
-			if (stringLiteral == null)
-			{
-				return false;
-			}
-
-			for (int i = 0; i < stringLiteral.Length; i++)
-			{
-				if (index == charArray.Length)
-				{
-					return false;
-				}
-				if (stringLiteral[i] != charArray[index])
-				{
-					return false;
-				}
-				++index;
-			}
-
-			return true;
-		}
-
-		private static char[] getStringLiteral(char key)
-		{
-			switch (key)
-			{
-				case 't':
-				{
-					return "true".ToCharArray();
-				}
-				case 'f':
-				{
-					return "false".ToCharArray();
-				}
-				case 'n':
-				{
-					return "null".ToCharArray();
-				}
-				default:
-				{
-					return null;
-				}
-			}
-		}
-
-		private static JSON ParseNumberString(string number, bool isInteger)
-		{
-			if (isInteger)
-			{
-				if (long.TryParse(number, out long value))
-				{
-					return new JSON(value);
-				}
-
-				return new JSON(ValueType.Null);
-			}
-			else
-			{
-				if (double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
-				{
-					return new JSON(value);
-				}
-
-				return new JSON(ValueType.Null);
-			}
 		}
 		#endregion
 	}
