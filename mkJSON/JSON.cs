@@ -33,20 +33,19 @@ namespace MkJSON
 		private int _maxIndex = -1;
 
 		#region Properties
-		private static bool _strictTraverseAll = true;
-		public static bool StrictTraverseAll
-		{
+		private static DefaultParameters _default = new DefaultParameters();
+		public static DefaultParameters Default {
 			get
 			{
-				return _strictTraverseAll;
+				return _default;
 			}
 			set
 			{
-				_strictTraverseAll = value;
+				_default = value;
 			}
 		}
 
-		public bool? StrictTraverse { get; set; }
+		public bool? Strict { get; set; }
 
 		public JSON this[int index]
 		{
@@ -368,54 +367,58 @@ namespace MkJSON
 		#endregion
 
 		#region Add(index, value)
-		public void Add(int index, string value)
+		public void Add(int index, string value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(index, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(int index, bool value)
+		public void Add(int index, bool value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(index, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(int index, int value)
+		public void Add(int index, int value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(index, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(int index, long value)
+		public void Add(int index, long value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(index, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(int index, float value)
+		public void Add(int index, float value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(index, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(int index, double value)
+		public void Add(int index, double value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(index, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(int index, DateTime value)
+		public void Add(int index, DateTime value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(index, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add<T>(int index, T value)
+		public void Add<T>(int index, T value, bool? strict = null)
 		{
-			Add(index, JSON.From(value).StrictTraverse = StrictTraverse);
+			JSON json = JSON.From(value);
+
+			json.Strict = strict;
+
+			Add(index, json, strict);
 		}
 
 		public void Add(KeyValuePair<int, JSON> item)
 		{
-			Add(item.Key, item.Value);
+			Add(item.Key, item.Value, null);
 		}
 
-		public void Add(int index, JSON value)
+		public void Add(int index, JSON value, bool? strict = null)
 		{
-			if (_type == ValueType.Undefined)
+			if (_type == ValueType.Undefined && !IsStrict(strict))
 			{
 				_value = new SortedDictionary<int, JSON>();
 				_type = ValueType.Array;
@@ -434,7 +437,7 @@ namespace MkJSON
 				_maxIndex = index;
 			}
 
-			value.StrictTraverse = StrictTraverse;
+			value.Strict = Strict;
 
 			if (((SortedDictionary<int, JSON>)_value).ContainsKey(index))
 			{
@@ -448,54 +451,68 @@ namespace MkJSON
 		#endregion
 
 		#region Add(name, value)
-		public void Add(string name, string value)
+		public void Add(string name, string value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(name, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(string name, bool value)
+		public void Add(string name, bool value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(name, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(string name, int value)
+		public void Add(string name, int value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(name, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(string name, long value)
+		public void Add(string name, long value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(name, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(string name, float value)
+		public void Add(string name, float value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(name, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(string name, double value)
+		public void Add(string name, double value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(name, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add(string name, DateTime value)
+		public void Add(string name, DateTime value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { StrictTraverse = StrictTraverse });
+			Add(name, new JSON(value) { Strict = strict }, strict);
 		}
 
-		public void Add<T>(string name, T value)
+		public void Add<T>(string name, T value, bool? strict = null)
 		{
-			Add(name, JSON.From(value).StrictTraverse = StrictTraverse);
+			JSON json = JSON.From(value);
+
+			json.Strict = strict;
+
+			Add(name, json, strict);
 		}
 
 		public void Add(KeyValuePair<string, JSON> item)
 		{
-			Add(item.Key, item.Value);
+			Add(item.Key, item.Value, null);
+		}
+
+		public void Add(KeyValuePair<string, JSON> item, bool? strict = null)
+		{
+			Add(item.Key, item.Value, strict);
 		}
 
 		public void Add(string name, JSON value)
 		{
-			if (_type == ValueType.Undefined)
+			Add(name, value, null);
+		}
+
+		public void Add(string name, JSON value, bool? strict = null)
+		{
+			if (_type == ValueType.Undefined && !IsStrict(strict))
 			{
 				_value = new Dictionary<string, JSON>();
 				_type = ValueType.Object;
@@ -510,7 +527,7 @@ namespace MkJSON
 				value = new JSON(ValueType.Undefined);
 			}
 
-			value.StrictTraverse = StrictTraverse;
+			value.Strict = strict;
 
 			if (((Dictionary<string, JSON>)_value).ContainsKey(name))
 			{
@@ -661,17 +678,17 @@ namespace MkJSON
 			return Equals(JSON.From(value));
 		}
 
-		public bool Equals(JSON value, bool strict = true)
+		public bool Equals(JSON value, bool? strict = null)
 		{
 			switch (_type)
 			{
 				case ValueType.Undefined:
 				{
-					return value.Type == ValueType.Undefined || (!strict && value.Type == ValueType.Null);
+					return value.Type == ValueType.Undefined || (!IsStrict(strict) && value.Type == ValueType.Null);
 				}
 				case ValueType.Null:
 				{
-					return value.Type == ValueType.Null || (!strict && value.Type == ValueType.Undefined);
+					return value.Type == ValueType.Null || (!IsStrict(strict) && value.Type == ValueType.Undefined);
 				}
 				case ValueType.Array:
 				{
@@ -716,7 +733,7 @@ namespace MkJSON
 				}
 				case ValueType.Boolean:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						return value.Type == ValueType.Boolean && value.ToBool(true) == (bool)_value;
 					}
@@ -724,7 +741,7 @@ namespace MkJSON
 				}
 				case ValueType.Float:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						return value.Type == ValueType.Float && value.ToDouble(true) == (double)_value;
 					}
@@ -732,7 +749,7 @@ namespace MkJSON
 				}
 				case ValueType.Integer:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						return value.Type == ValueType.Integer && value.ToLong(true) == (long)_value;
 					}
@@ -740,7 +757,7 @@ namespace MkJSON
 				}
 				case ValueType.String:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						return value.Type == ValueType.String && value.ToString(true) == (string)_value;
 					}
@@ -753,18 +770,18 @@ namespace MkJSON
 			}
 		}
 
-		bool Equals(bool value, bool strict = true)
+		bool Equals(bool value, bool? strict = null)
 		{
-			if (strict)
+			if (IsStrict(strict))
 			{
 				return _type == ValueType.Boolean && value == (bool)_value;
 			}
 			return value == ToBool(false);
 		}
 
-		bool Equals(float value, bool strict = true)
+		bool Equals(float value, bool? strict = null)
 		{
-			if (strict && _type != ValueType.Float)
+			if (IsStrict(strict) && _type != ValueType.Float)
 			{
 				return false;
 			}
@@ -775,9 +792,9 @@ namespace MkJSON
 			return false;
 		}
 
-		bool Equals(double value, bool strict = true)
+		bool Equals(double value, bool? strict = null)
 		{
-			if (strict && _type != ValueType.Float)
+			if (IsStrict(strict) && _type != ValueType.Float)
 			{
 				return false;
 			}
@@ -788,9 +805,9 @@ namespace MkJSON
 			return false;
 		}
 
-		bool Equals(int value, bool strict = true)
+		bool Equals(int value, bool? strict = null)
 		{
-			if (strict && _type != ValueType.Integer)
+			if (IsStrict(strict) && _type != ValueType.Integer)
 			{
 				return false;
 			}
@@ -801,9 +818,9 @@ namespace MkJSON
 			return false;
 		}
 
-		bool Equals(long value, bool strict = true)
+		bool Equals(long value, bool? strict = null)
 		{
-			if (strict && _type != ValueType.Integer)
+			if (IsStrict(strict) && _type != ValueType.Integer)
 			{
 				return false;
 			}
@@ -814,9 +831,9 @@ namespace MkJSON
 			return false;
 		}
 
-		bool Equals(string value, bool strict = true)
+		bool Equals(string value, bool? strict = null)
 		{
-			if (strict && _type != ValueType.String)
+			if (IsStrict(strict) && _type != ValueType.String)
 			{
 				return false;
 			}
@@ -948,7 +965,7 @@ namespace MkJSON
 				return GetArray((Array)(object)input);
 			}
 
-			JSON output = new JSON();
+			JSON output = new JSON(JSON.ValueType.Object);
 
 			foreach (FieldInfo field in input.GetType().GetFields())
 			{
@@ -1136,20 +1153,18 @@ namespace MkJSON
 		#region GetItem()
 		public JSON GetItem(int index)
 		{
-			bool strictTraverse = StrictTraverseAll;
+			return GetItem(index, null);
+		}
 
-			if (StrictTraverse.HasValue)
-			{
-				strictTraverse = StrictTraverse.Value;
-			}
-
+		public JSON GetItem(int index, bool? strict = null)
+		{
 			if (_type != ValueType.Array)
 			{
-				if (strictTraverse)
+				if (IsStrict(strict))
 				{
 					throw new Exception("Can access indices only with an Array");
 				}
-				return new JSON(ValueType.Undefined) { StrictTraverse = StrictTraverse };
+				return new JSON(ValueType.Undefined) { Strict = strict };
 			}
 			if (index < 0)
 			{
@@ -1161,25 +1176,23 @@ namespace MkJSON
 				return ((SortedDictionary<int, JSON>)_value)[index];
 			}
 
-			return new JSON(ValueType.Undefined) { StrictTraverse = StrictTraverse };
+			return new JSON(ValueType.Undefined) { Strict = strict };
 		}
 
 		public JSON GetItem(string name)
 		{
+			return GetItem(name, null);
+		}
+
+		public JSON GetItem(string name, bool? strict = null)
+		{
 			if (_type != ValueType.Object)
 			{
-				bool strictTraverse = StrictTraverseAll;
-
-				if (StrictTraverse.HasValue)
-				{
-					strictTraverse = StrictTraverse.Value;
-				}
-
-				if (strictTraverse)
+				if (IsStrict(strict))
 				{
 					throw new Exception("Can access by named elements only with an Object");
 				}
-				return new JSON(ValueType.Undefined) { StrictTraverse = StrictTraverse };
+				return new JSON(ValueType.Undefined) { Strict = strict };
 			}
 
 			if (((Dictionary<string, JSON>)_value).ContainsKey(name))
@@ -1187,9 +1200,22 @@ namespace MkJSON
 				return ((Dictionary<string, JSON>)_value)[name];
 			}
 
-			return new JSON(ValueType.Undefined) { StrictTraverse = StrictTraverse };
+			return new JSON(ValueType.Undefined) { Strict = strict };
 		}
 		#endregion
+
+		public bool IsStrict(bool? strict = null)
+		{
+			if (strict.HasValue)
+			{
+				return strict.Value;
+			}
+			if (Strict.HasValue)
+			{
+				return Strict.Value;
+			}
+			return JSON.Default.Strict;
+		}
 
 		#region Parse
 		private enum State
@@ -2074,44 +2100,44 @@ namespace MkJSON
 		#endregion
 
 		#region Push(value)
-		public void Push(string value)
+		public void Push(string value, bool? strict = null)
 		{
-			Push(new JSON(value));
+			Push(new JSON(value), strict);
 		}
 
-		public void Push(bool value)
+		public void Push(bool value, bool? strict = null)
 		{
-			Push(new JSON(value));
+			Push(new JSON(value), strict);
 		}
 
-		public void Push(int value)
+		public void Push(int value, bool? strict = null)
 		{
-			Push(new JSON(value));
+			Push(new JSON(value), strict);
 		}
 
-		public void Push(long value)
+		public void Push(long value, bool? strict = null)
 		{
-			Push(new JSON(value));
+			Push(new JSON(value), strict);
 		}
 
-		public void Push(float value)
+		public void Push(float value, bool? strict = null)
 		{
-			Push(new JSON(value));
+			Push(new JSON(value), strict);
 		}
 
-		public void Push(double value)
+		public void Push(double value, bool? strict = null)
 		{
-			Push(new JSON(value));
+			Push(new JSON(value), strict);
 		}
 
-		public void Push(DateTime value)
+		public void Push(DateTime value, bool? strict = null)
 		{
-			Push(new JSON(value));
+			Push(new JSON(value), strict);
 		}
 
-		public void Push(JSON value)
+		public void Push(JSON value, bool? strict = null)
 		{
-			if (_type == ValueType.Undefined)
+			if (_type == ValueType.Undefined && !IsStrict(strict))
 			{
 				_value = new SortedDictionary<int, JSON>();
 				_type = ValueType.Array;
@@ -2416,7 +2442,7 @@ namespace MkJSON
 		#endregion
 
 		#region Type conversions
-		public bool? ToBool(bool strict = true)
+		public bool? ToBool(bool? strict = null)
 		{
 			if (TryGetValue(out bool? value, strict))
 			{
@@ -2434,7 +2460,7 @@ namespace MkJSON
 			return null;
 		}
 
-		public double? ToDouble(bool strict = true)
+		public double? ToDouble(bool? strict = null)
 		{
 			if (TryGetValue(out double? value, strict))
 			{
@@ -2443,7 +2469,7 @@ namespace MkJSON
 			return null;
 		}
 
-		public float? ToFloat(bool strict = true)
+		public float? ToFloat(bool? strict = null)
 		{
 			if (TryGetValue(out float? value, strict))
 			{
@@ -2452,7 +2478,7 @@ namespace MkJSON
 			return null;
 		}
 
-		public int? ToInt(bool strict = true)
+		public int? ToInt(bool? strict = null)
 		{
 			if (TryGetValue(out int? value, strict))
 			{
@@ -2461,7 +2487,7 @@ namespace MkJSON
 			return null;
 		}
 
-		public long? ToLong(bool strict = true)
+		public long? ToLong(bool? strict = null)
 		{
 			if (TryGetValue(out long? value, strict))
 			{
@@ -2475,9 +2501,9 @@ namespace MkJSON
 			return ToString(true);
 		}
 
-		public string ToString(bool strict = true)
+		public string ToString(bool? strict = null)
 		{
-			if (strict && _type != ValueType.String)
+			if (IsStrict(strict) && _type != ValueType.String)
 			{
 				return null;
 			}
@@ -2521,7 +2547,7 @@ namespace MkJSON
 			}
 		}
 
-		public T To<T>(bool strict = true) where T : new()
+		public T To<T>(bool? strict = null) where T : new()
 		{
 			if (TryGetValue(out T value, strict))
 			{
@@ -2534,48 +2560,65 @@ namespace MkJSON
 		#region TryGetValue()
 		public bool TryGetValue(int index, out JSON output)
 		{
+			return TryGetValue(index, out output, null);
+		}
+
+		public bool TryGetValue(int index, out JSON output, bool? strict = null)
+		{
 			if (_type != ValueType.Array || index < 0 || index > _maxIndex)
 			{
 				output = null;
 				return false;
 			}
-
 			if (((SortedDictionary<int, JSON>)_value).ContainsKey(index))
 			{
 				output = ((SortedDictionary<int, JSON>)_value)[index];
+				return true;
 			}
-			else
+			if (IsStrict(strict))
 			{
-				output = new JSON(ValueType.Undefined);
+				output = null;
+				return false;
 			}
+
+			output = new JSON(ValueType.Undefined);
 			return true;
 		}
 
 		public bool TryGetValue(string name, out JSON output)
+		{
+			return TryGetValue(name, out output, null);
+		}
+
+		public bool TryGetValue(string name, out JSON output, bool? strict = null)
 		{
 			if (_type != ValueType.Object)
 			{
 				output = null;
 				return false;
 			}
-
 			if (((Dictionary<string, JSON>)_value).ContainsKey(name))
 			{
 				output = ((Dictionary<string, JSON>)_value)[name];
 				return true;
 			}
+			if (IsStrict(strict))
+			{
+				output = null;
+				return false;
+			}
 
-			output = null;
-			return false;
+			output = new JSON(ValueType.Undefined);
+			return true;
 		}
 
-		public bool TryGetValue(out string output, bool strict = true)
+		public bool TryGetValue(out string output, bool? strict = null)
 		{
 			switch (_type)
 			{
 				case ValueType.Boolean:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2597,7 +2640,7 @@ namespace MkJSON
 				}
 				case ValueType.Integer:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2607,7 +2650,7 @@ namespace MkJSON
 				}
 				case ValueType.Float:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2623,7 +2666,7 @@ namespace MkJSON
 			}
 		}
 
-		public bool TryGetValue(out int? output, bool strict = true)
+		public bool TryGetValue(out int? output, bool? strict = null)
 		{
 			if (TryGetValue(out long? longValue, strict))
 			{
@@ -2634,7 +2677,7 @@ namespace MkJSON
 			return false;
 		}
 
-		public bool TryGetValue(out bool? output, bool strict = true)
+		public bool TryGetValue(out bool? output, bool? strict = null)
 		{
 			switch (_type)
 			{
@@ -2645,7 +2688,7 @@ namespace MkJSON
 				}
 				case ValueType.String:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2660,7 +2703,7 @@ namespace MkJSON
 				}
 				case ValueType.Integer:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2670,7 +2713,7 @@ namespace MkJSON
 				}
 				case ValueType.Float:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2686,13 +2729,13 @@ namespace MkJSON
 			}
 		}
 
-		public bool TryGetValue(out long? output, bool strict = true)
+		public bool TryGetValue(out long? output, bool? strict = null)
 		{
 			switch (_type)
 			{
 				case ValueType.Boolean:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2709,7 +2752,7 @@ namespace MkJSON
 				}
 				case ValueType.String:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2729,7 +2772,7 @@ namespace MkJSON
 				}
 				case ValueType.Float:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2745,7 +2788,7 @@ namespace MkJSON
 			}
 		}
 
-		public bool TryGetValue(out float? output, bool strict = true)
+		public bool TryGetValue(out float? output, bool? strict = null)
 		{
 			if (TryGetValue(out double? longValue))
 			{
@@ -2756,13 +2799,13 @@ namespace MkJSON
 			return false;
 		}
 
-		public bool TryGetValue(out double? output, bool strict = true)
+		public bool TryGetValue(out double? output, bool? strict = null)
 		{
 			switch (_type)
 			{
 				case ValueType.Boolean:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2779,7 +2822,7 @@ namespace MkJSON
 				}
 				case ValueType.String:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2794,7 +2837,7 @@ namespace MkJSON
 				}
 				case ValueType.Integer:
 				{
-					if (strict)
+					if (IsStrict(strict))
 					{
 						output = null;
 						return false;
@@ -2839,7 +2882,7 @@ namespace MkJSON
 			return false;
 		}
 
-		public bool TryGetValue<T>(out T output, bool strict = true) where T : new()
+		public bool TryGetValue<T>(out T output, bool? strict = null) where T : new()
 		{
 			output = new T();
 
@@ -2876,7 +2919,7 @@ namespace MkJSON
 			return true;
 		}
 
-		private bool GetValue(Type type, string name, out object output, bool strict)
+		private bool GetValue(Type type, string name, out object output, bool? strict = null)
 		{
 			if (!ContainsKey(name))
 			{
@@ -3025,7 +3068,7 @@ namespace MkJSON
 			return false;
 		}
 
-		private T[] GetArray<T>(JSON input, Type elementType, bool strict = false)
+		private T[] GetArray<T>(JSON input, Type elementType, bool? strict = null)
 		{
 			List<T> output = new List<T>();
 			int index = 0;
@@ -3070,5 +3113,11 @@ namespace MkJSON
 			return output.ToArray();
 		}
 		#endregion
+
+		public class DefaultParameters
+		{
+			public bool Strict = true;
+			public bool CaseSensitive = true;
+		}
 	}
 }

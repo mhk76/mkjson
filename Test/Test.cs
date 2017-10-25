@@ -35,14 +35,11 @@ namespace Test
 
 				try
 				{
-					if (JSON.Parse(json) != null)
-					{
-						Assert.Fail(file);
-					}
+					JSON.Parse(json);
+					Assert.Fail(file + ": should have failed");
 				}
 				catch (Exception e)
 				{
-					Assert.Fail(file + ": " + e.Message);
 				}
 			}
 		}
@@ -54,7 +51,7 @@ namespace Test
 
 			try
 			{
-				JSON json = new JSON();
+				JSON json = new JSON(JSON.ValueType.Object);
 				JSON array = new JSON(JSON.ValueType.Array);
 				DateTime date = new DateTime(2004, 2, 29, 13, 15, 59);
 
@@ -166,7 +163,7 @@ namespace Test
 
 			try
 			{
-				JSON json = new JSON();
+				JSON json = new JSON(JSON.ValueType.Array);
 
 				testItem = "pushing a string into undefined json object";
 				json.Push("Hello World!");
@@ -217,10 +214,7 @@ namespace Test
 
 
 				testItem = "initalizing json";
-				json = new JSON(JSON.ValueType.Object)
-				{
-					StrictTraverse = false
-				};
+				json = new JSON(JSON.ValueType.Object);
 				json.Add(
 					"first",
 					new JSON(JSON.ValueType.Object)
@@ -230,8 +224,11 @@ namespace Test
 				);
 				json.Add("array", new JSON(JSON.ValueType.Array));
 
-				testItem = "traversing existing objects (non-strict)";
+				testItem = "traversing existing objects (strict)";
 				Assert.IsTrue(json["first"]["second"].ToString() == "third");
+
+				JSON.Default.Strict = false;
+
 				testItem = "traversing non-existing objects (non-strict)";
 				Assert.IsTrue(json["first"]["notExisting"]["shouldBeUndefined"].Type == JSON.ValueType.Undefined);
 				testItem = "traversing non-existing array index (non-strict)";
