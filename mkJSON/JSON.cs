@@ -270,10 +270,32 @@ namespace MkJSON
 			_value = value;
 		}
 
+		public JSON(bool? value)
+		{
+			if (value.HasValue)
+			{
+				_type = ValueType.Boolean;
+				_value = (bool)value.Value;
+				return;
+			}
+			_type = ValueType.Null;
+		}
+
 		public JSON(int value)
 		{
 			_type = ValueType.Integer;
 			_value = (long)value;
+		}
+
+		public JSON(int? value)
+		{
+			if (value.HasValue)
+			{
+				_type = ValueType.Integer;
+				_value = (long)value.Value;
+				return;
+			}
+			_type = ValueType.Null;
 		}
 
 		public JSON(long value)
@@ -282,10 +304,32 @@ namespace MkJSON
 			_value = value;
 		}
 
+		public JSON(long? value)
+		{
+			if (value.HasValue)
+			{
+				_type = ValueType.Integer;
+				_value = (long)value.Value;
+				return;
+			}
+			_type = ValueType.Null;
+		}
+
 		public JSON(float value)
 		{
 			_type = ValueType.Float;
 			_value = double.Parse(value.ToString("r"));
+		}
+
+		public JSON(float? value)
+		{
+			if (value.HasValue)
+			{
+				_type = ValueType.Float;
+				_value = (double)value.Value;
+				return;
+			}
+			_type = ValueType.Null;
 		}
 
 		public JSON(double value)
@@ -294,10 +338,32 @@ namespace MkJSON
 			_value = value;
 		}
 
+		public JSON(double? value)
+		{
+			if (value.HasValue)
+			{
+				_type = ValueType.Float;
+				_value = (double)value.Value;
+				return;
+			}
+			_type = ValueType.Null;
+		}
+
 		public JSON(DateTime value)
 		{
 			_type = ValueType.String;
 			_value = value.ToString("yyyy-MM-ddTHH:mm:ss.fff");
+		}
+
+		public JSON(DateTime? value)
+		{
+			if (value.HasValue)
+			{
+				_type = ValueType.String;
+				_value = value.Value.ToString("yyyy-MM-ddTHH:mm:ss.fff");
+				return;
+			}
+			_type = ValueType.Null;
 		}
 		#endregion
 
