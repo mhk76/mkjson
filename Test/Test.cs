@@ -254,7 +254,7 @@ namespace Test
 
 				json = new JSON();
 
-				JSON.Default.Strict = false;
+				JSON.Global.Strict = false;
 
 				testItem = "traversing non-existing objects (global)";
 				Assert.IsTrue(json["notExisting"].Type == JSON.ValueType.Undefined);
