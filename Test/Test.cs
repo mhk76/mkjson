@@ -228,21 +228,9 @@ namespace Test
 
 				testItem = "traversing existing objects (strict)";
 				Assert.IsTrue(json["first"]["second"].ToString() == "third");
-			}
-			catch (Exception e)
-			{
-				Assert.Fail(e.Message + " While " + testItem);
-			}
-		}
 
-		[TestMethod]
-		public void NonStrict()
-		{
-			string testItem = "initializing";
 
-			try
-			{
-				JSON json = new JSON("1");
+				json = new JSON("1");
 
 				testItem = "converting string to long (method)";
 				Assert.IsTrue(json.ToLong(false) == 1);

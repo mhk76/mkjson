@@ -3185,7 +3185,7 @@ namespace MkJSON
 
 		public class DefaultParameters
 		{
-			public bool Strict = true;
+			public bool Strict = false;
 			public bool CaseSensitive = true;
 		}
 	}
