@@ -859,18 +859,24 @@ namespace MkJSON
 		#endregion
 
 		#region From
-		public static JSON From<T>(T input)
+		public static JSON From<T>(T input, bool? strict = null)
 		{
 			if (input == null)
 			{
-				return JSON.Null;
+				return new JSON(ValueType.Null)
+				{
+					Strict = strict
+				};
 			}
 
 			Type inputType = input.GetType();
 
 			if (inputType == typeof(bool))
 			{
-				return new JSON((bool)(object)input);
+				return new JSON((bool)(object)input)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(bool?))
 			{
@@ -878,13 +884,22 @@ namespace MkJSON
 
 				if (value.HasValue)
 				{
-					return new JSON(value.Value);
+					return new JSON(value.Value)
+					{
+						Strict = strict
+					};
 				}
-				return JSON.Null;
+				return new JSON(ValueType.Null)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(float))
 			{
-				return new JSON((float)(object)input);
+				return new JSON((float)(object)input)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(float?))
 			{
@@ -892,13 +907,22 @@ namespace MkJSON
 
 				if (value.HasValue)
 				{
-					return new JSON(value.Value);
+					return new JSON(value.Value)
+					{
+						Strict = strict
+					};
 				}
-				return JSON.Null;
+				return new JSON(ValueType.Null)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(double))
 			{
-				return new JSON((double)(object)input);
+				return new JSON((double)(object)input)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(double?))
 			{
@@ -906,13 +930,22 @@ namespace MkJSON
 
 				if (value.HasValue)
 				{
-					return new JSON(value.Value);
+					return new JSON(value.Value)
+					{
+						Strict = strict
+					};
 				}
-				return JSON.Null;
+				return new JSON(ValueType.Null)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(int))
 			{
-				return new JSON((int)(object)input);
+				return new JSON((int)(object)input)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(int?))
 			{
@@ -920,13 +953,22 @@ namespace MkJSON
 
 				if (value.HasValue)
 				{
-					return new JSON(value.Value);
+					return new JSON(value.Value)
+					{
+						Strict = strict
+					};
 				}
-				return JSON.Null;
+				return new JSON(ValueType.Null)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(long))
 			{
-				return new JSON((long)(object)input);
+				return new JSON((long)(object)input)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(long?))
 			{
@@ -934,17 +976,29 @@ namespace MkJSON
 
 				if (value.HasValue)
 				{
-					return new JSON(value.Value);
+					return new JSON(value.Value)
+					{
+						Strict = strict
+					};
 				}
-				return JSON.Null;
+				return new JSON(ValueType.Null)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(string))
 			{
-				return new JSON((string)(object)input);
+				return new JSON((string)(object)input)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(DateTime))
 			{
-				return new JSON(((DateTime)(object)input));
+				return new JSON(((DateTime)(object)input))
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == typeof(DateTime?))
 			{
@@ -952,9 +1006,15 @@ namespace MkJSON
 
 				if (value.HasValue)
 				{
-					return new JSON(value.Value);
+					return new JSON(value.Value)
+					{
+						Strict = strict
+					};
 				}
-				return JSON.Null;
+				return new JSON(ValueType.Null)
+				{
+					Strict = strict
+				};
 			}
 			if (inputType == __jsonType)
 			{
@@ -962,10 +1022,13 @@ namespace MkJSON
 			}
 			if (inputType.IsArray)
 			{
-				return GetArray((Array)(object)input);
+				return GetArray((Array)(object)input, strict);
 			}
 
-			JSON output = new JSON(JSON.ValueType.Object);
+			JSON output = new JSON(JSON.ValueType.Object)
+			{
+				Strict = strict
+			};
 
 			foreach (FieldInfo field in input.GetType().GetFields())
 			{
@@ -983,9 +1046,12 @@ namespace MkJSON
 			return output;
 		}
 
-		private static JSON GetArray(Array input)
+		private static JSON GetArray(Array input, bool? strict)
 		{
-			JSON output = new JSON(ValueType.Array);
+			JSON output = new JSON(ValueType.Array)
+			{
+				Strict = strict
+			};
 			Type inputType = input.GetType().GetElementType();
 
 			foreach (object item in input)
@@ -1109,7 +1175,7 @@ namespace MkJSON
 				}
 				if (inputType.IsArray)
 				{
-					output.Push(GetArray((Array)(object)item));
+					output.Push(GetArray((Array)(object)item, strict));
 					continue;
 				}
 			}
@@ -1239,7 +1305,7 @@ namespace MkJSON
 			End
 		};
 
-		public static JSON Parse(string text)
+		public static JSON Parse(string text, bool? strict = null)
 		{
 			if (text == null || text.Length == 0)
 			{
@@ -1250,7 +1316,7 @@ namespace MkJSON
 
 			text = text.Trim(__whitespace);
 
-			JSON json = ParsePart(text.ToCharArray(), ref index);
+			JSON json = ParsePart(text.ToCharArray(), ref index, strict);
 
 			if (json == null)
 			{
@@ -1264,9 +1330,12 @@ namespace MkJSON
 			return json;
 		}
 
-		private static JSON ParsePart(char[] charArray, ref int index)
+		private static JSON ParsePart(char[] charArray, ref int index, bool? strict = null)
 		{
-			JSON json = new JSON(ValueType.Undefined);
+			JSON json = new JSON(ValueType.Undefined)
+			{
+				Strict = strict
+			};
 			State state = State.WaitStart;
 			StringBuilder builder = null;
 			Stack<State> nextState = new Stack<State>();
@@ -1309,7 +1378,7 @@ namespace MkJSON
 									break;
 								}
 
-								JSON value = ParsePart(charArray, ref index);
+								JSON value = ParsePart(charArray, ref index, strict);
 
 								if (value == null)
 								{
@@ -1328,7 +1397,7 @@ namespace MkJSON
 							}
 							case State.WaitValue:
 							{
-								JSON value = ParsePart(charArray, ref index);
+								JSON value = ParsePart(charArray, ref index, strict);
 
 								if (value == null)
 								{
