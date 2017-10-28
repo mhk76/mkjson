@@ -369,37 +369,37 @@ namespace MkJSON
 		#region Add(index, value)
 		public void Add(int index, string value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { Strict = strict }, strict);
+			Add(index, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(int index, bool value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { Strict = strict }, strict);
+			Add(index, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(int index, int value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { Strict = strict }, strict);
+			Add(index, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(int index, long value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { Strict = strict }, strict);
+			Add(index, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(int index, float value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { Strict = strict }, strict);
+			Add(index, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(int index, double value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { Strict = strict }, strict);
+			Add(index, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(int index, DateTime value, bool? strict = null)
 		{
-			Add(index, new JSON(value) { Strict = strict }, strict);
+			Add(index, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add<T>(int index, T value, bool? strict = null)
@@ -453,37 +453,37 @@ namespace MkJSON
 		#region Add(name, value)
 		public void Add(string name, string value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { Strict = strict }, strict);
+			Add(name, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(string name, bool value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { Strict = strict }, strict);
+			Add(name, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(string name, int value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { Strict = strict }, strict);
+			Add(name, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(string name, long value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { Strict = strict }, strict);
+			Add(name, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(string name, float value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { Strict = strict }, strict);
+			Add(name, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(string name, double value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { Strict = strict }, strict);
+			Add(name, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add(string name, DateTime value, bool? strict = null)
 		{
-			Add(name, new JSON(value) { Strict = strict }, strict);
+			Add(name, new JSON(value) { Strict = Strict }, strict);
 		}
 
 		public void Add<T>(string name, T value, bool? strict = null)
@@ -1164,7 +1164,7 @@ namespace MkJSON
 				{
 					throw new Exception("Can access indices only with an Array");
 				}
-				return new JSON(ValueType.Undefined) { Strict = strict };
+				return new JSON(ValueType.Undefined) { Strict = Strict };
 			}
 			if (index < 0)
 			{
@@ -1176,7 +1176,7 @@ namespace MkJSON
 				return ((SortedDictionary<int, JSON>)_value)[index];
 			}
 
-			return new JSON(ValueType.Undefined) { Strict = strict };
+			return new JSON(ValueType.Undefined) { Strict = Strict };
 		}
 
 		public JSON GetItem(string name)
@@ -1192,7 +1192,7 @@ namespace MkJSON
 				{
 					throw new Exception("Can access by named elements only with an Object");
 				}
-				return new JSON(ValueType.Undefined) { Strict = strict };
+				return new JSON(ValueType.Undefined) { Strict = Strict };
 			}
 
 			if (((Dictionary<string, JSON>)_value).ContainsKey(name))
@@ -1200,7 +1200,7 @@ namespace MkJSON
 				return ((Dictionary<string, JSON>)_value)[name];
 			}
 
-			return new JSON(ValueType.Undefined) { Strict = strict };
+			return new JSON(ValueType.Undefined) { Strict = Strict };
 		}
 		#endregion
 

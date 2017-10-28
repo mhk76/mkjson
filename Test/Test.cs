@@ -165,7 +165,7 @@ namespace Test
 			{
 				JSON json = new JSON(JSON.ValueType.Array);
 
-				testItem = "pushing a string into undefined json object";
+				testItem = "pushing a string into a json array";
 				json.Push("Hello World!");
 				testItem = "pushing a null into the json array";
 				json.Push(JSON.Null);
@@ -214,25 +214,64 @@ namespace Test
 
 
 				testItem = "initalizing json";
-				json = new JSON(JSON.ValueType.Object);
-				json.Add(
-					"first",
-					new JSON(JSON.ValueType.Object)
+				json = new JSON(JSON.ValueType.Object)
+				{
 					{
-						{ "second", new JSON("third") }
-					}
-				);
-				json.Add("array", new JSON(JSON.ValueType.Array));
+						"first",
+						new JSON(JSON.ValueType.Object)
+						{
+							{ "second", new JSON("third") }
+						}
+					},
+					{ "array", new JSON(JSON.ValueType.Array) }
+				};
 
 				testItem = "traversing existing objects (strict)";
 				Assert.IsTrue(json["first"]["second"].ToString() == "third");
+			}
+			catch (Exception e)
+			{
+				Assert.Fail(e.Message + " While " + testItem);
+			}
+		}
+
+		[TestMethod]
+		public void NonStrict()
+		{
+			string testItem = "initializing";
+
+			try
+			{
+				JSON json = new JSON("1");
+
+				testItem = "converting string to long (method)";
+				Assert.IsTrue(json.ToLong(false) == 1);
+				testItem = "converting string to double (method)";
+				Assert.IsTrue(json.ToDouble(false) == 1d);
+
+
+				json = new JSON("true");
+
+				testItem = "converting string to bool (method)";
+				Assert.IsTrue(json.ToBool(false) == true);
+
+
+				json = new JSON() { Strict = false };
+
+				testItem = "traversing non-existing objects (object)";
+				Assert.IsTrue(json["notExisting"].Type == JSON.ValueType.Undefined);
+				testItem = "traversing non-existing array index (object)";
+				Assert.IsTrue(json[10].Type == JSON.ValueType.Undefined);
+
+
+				json = new JSON();
 
 				JSON.Default.Strict = false;
 
-				testItem = "traversing non-existing objects (non-strict)";
-				Assert.IsTrue(json["first"]["notExisting"]["shouldBeUndefined"].Type == JSON.ValueType.Undefined);
-				testItem = "traversing non-existing array index (non-strict)";
-				Assert.IsTrue(json["array"][10].Type == JSON.ValueType.Undefined);
+				testItem = "traversing non-existing objects (global)";
+				Assert.IsTrue(json["notExisting"].Type == JSON.ValueType.Undefined);
+				testItem = "traversing non-existing array index (global)";
+				Assert.IsTrue(json[10].Type == JSON.ValueType.Undefined);
 			}
 			catch (Exception e)
 			{
