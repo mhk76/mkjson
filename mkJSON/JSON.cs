@@ -33,15 +33,15 @@ namespace MkJSON
 		private int _maxIndex = -1;
 
 		#region Properties
-		private static DefaultParameters _default = new DefaultParameters();
-		public static DefaultParameters Default {
+		private static GlobalParameters _global = new GlobalParameters();
+		public static GlobalParameters Global {
 			get
 			{
-				return _default;
+				return _global;
 			}
 			set
 			{
-				_default = value;
+				_global = value;
 			}
 		}
 
@@ -1280,7 +1280,7 @@ namespace MkJSON
 			{
 				return Strict.Value;
 			}
-			return JSON.Default.Strict;
+			return JSON.Global.Strict;
 		}
 
 		#region Parse
@@ -3183,7 +3183,7 @@ namespace MkJSON
 		}
 		#endregion
 
-		public class DefaultParameters
+		public class GlobalParameters
 		{
 			public bool Strict = false;
 			public bool CaseSensitive = true;
