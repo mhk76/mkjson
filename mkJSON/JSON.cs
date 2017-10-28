@@ -1270,7 +1270,7 @@ namespace MkJSON
 		}
 		#endregion
 
-		public bool IsStrict(bool? strict = null)
+		private bool IsStrict(bool? strict = null)
 		{
 			if (strict.HasValue)
 			{
@@ -1309,7 +1309,10 @@ namespace MkJSON
 		{
 			if (text == null || text.Length == 0)
 			{
-				return null;
+				return new JSON(ValueType.Undefined)
+				{
+					Strict = strict
+				};
 			}
 
 			int index = 0;
@@ -1318,10 +1321,6 @@ namespace MkJSON
 
 			JSON json = ParsePart(text.ToCharArray(), ref index, strict);
 
-			if (json == null)
-			{
-				return null;
-			}
 			if (index < text.Length)
 			{
 				throw new Exception("Invalid JSON at " + text.Substring(index));
@@ -1380,10 +1379,6 @@ namespace MkJSON
 
 								JSON value = ParsePart(charArray, ref index, strict);
 
-								if (value == null)
-								{
-									return null;
-								}
 								if (json.Type == ValueType.Array)
 								{
 									json.Push(value);
@@ -1399,10 +1394,6 @@ namespace MkJSON
 							{
 								JSON value = ParsePart(charArray, ref index, strict);
 
-								if (value == null)
-								{
-									return null;
-								}
 								if (json.Type == ValueType.Array)
 								{
 									json.Push(value);
