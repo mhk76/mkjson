@@ -678,6 +678,11 @@ namespace MkJSON
 			return Equals(JSON.From(value));
 		}
 
+		public bool Equals<T>(T value, bool? strict)
+		{
+			return Equals(JSON.From(value, strict), strict);
+		}
+
 		public bool Equals(JSON value, bool? strict = null)
 		{
 			switch (_type)
@@ -701,7 +706,7 @@ namespace MkJSON
 
 					for (int i = 0; i < Count; i++)
 					{
-						if (!array[i].Equals(value[i]))
+						if (!array[i].Equals(value[i], strict))
 						{
 							return false;
 						}
@@ -725,6 +730,10 @@ namespace MkJSON
 					foreach (KeyValuePair<string, JSON> item in array)
 					{
 						if (!value.Contains(item))
+						{
+							return false;
+						}
+						if (!value[item.Key].Equals(item.Value, strict))
 						{
 							return false;
 						}
