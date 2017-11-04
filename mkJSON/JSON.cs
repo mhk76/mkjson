@@ -1268,7 +1268,7 @@ namespace MkJSON
 
 		public JSON GetItem(string name)
 		{
-			return GetItem(name, null, null);
+			return GetItem(name, null);
 		}
 
 		public JSON GetItem(string name, bool? strict = null)
