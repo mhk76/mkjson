@@ -232,7 +232,7 @@ namespace MkJSON
 			_type = ValueType.Undefined;
 		}
 
-		public JSON(ValueType type)
+		public JSON(ValueType type, bool? caseSensitive = null)
 		{
 			if (type == ValueType.Array)
 			{
@@ -240,7 +240,19 @@ namespace MkJSON
 			}
 			else if (type == ValueType.Object)
 			{
-				_value = new Dictionary<string, JSON>();
+				if (caseSensitive == null)
+				{
+					caseSensitive = Global.CaseSensitive;
+				}
+
+				if (caseSensitive != true)
+				{
+					_value = new Dictionary<string, JSON>(StringComparer.OrdinalIgnoreCase);
+				}
+				else
+				{
+					_value = new Dictionary<string, JSON>();
+				}
 			}
 			else if (type != ValueType.Undefined && type != ValueType.Null)
 			{
@@ -1256,7 +1268,7 @@ namespace MkJSON
 
 		public JSON GetItem(string name)
 		{
-			return GetItem(name, null);
+			return GetItem(name, null, null);
 		}
 
 		public JSON GetItem(string name, bool? strict = null)
