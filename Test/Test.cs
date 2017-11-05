@@ -40,6 +40,7 @@ namespace Test
 				}
 				catch (Exception e)
 				{
+					e.ToString();
 				}
 			}
 		}
@@ -173,22 +174,22 @@ namespace Test
 				json.Push(JSON.Undefined);
 
 
-				testItem = "checking property 'Count'";
+				testItem = "testing property 'Count'";
 				Assert.IsTrue(json.Count == 3);
 
-				testItem = "checking property 'IsArray'";
+				testItem = "testing property 'IsArray'";
 				Assert.IsTrue(json.IsArray == true);
 				Assert.IsTrue(json[0].IsArray == false);
 
-				testItem = "checking property 'IsNull'";
+				testItem = "testing property 'IsNull'";
 				Assert.IsTrue(json[1].IsNull == true);
 				Assert.IsTrue(json[0].IsNull == false);
 
-				testItem = "checking property 'IsUndefined'";
+				testItem = "testing property 'IsUndefined'";
 				Assert.IsTrue(json[2].IsUndefined == true);
 				Assert.IsTrue(json[1].IsUndefined == false);
 
-				testItem = "checking property 'Type'";
+				testItem = "testing property 'Type'";
 				Assert.IsTrue(json.Type == JSON.ValueType.Array);
 
 
@@ -302,8 +303,100 @@ namespace Test
 		}
 
 		[TestMethod]
-		public void Error_Checking()
+		public void Error_testing()
 		{
+		}
+
+		[TestMethod]
+		public void Helper_Functions()
+		{
+			string testItem = "initializing";
+
+			try
+			{
+				JSON json = new JSON
+				{
+					{ 0, "B" },
+					{ 1, "E" },
+					{ 2, "A" },
+					{ 5, "C" }
+				};
+				int count = 0;
+
+
+				testItem = "testing Each()";
+				json.Each(delegate (JSON item, int index)
+				{
+					++count;
+				});
+
+				Assert.IsTrue(count == 4);
+
+
+				testItem = "testing Every()";
+				Assert.IsTrue(json.Every(delegate (JSON item, int index)
+				{
+					return true;
+				}));
+				Assert.IsFalse(json.Every(delegate (JSON item, int index)
+				{
+					return item.ToString() == "B";
+				}));
+
+
+				testItem = "testing Filter()";
+				Assert.IsTrue(json.Filter(delegate (JSON item, int index)
+				{
+					return item.ToString() != "E";
+				}).Stringify() == "[\"B\",\"A\",\"C\"]");
+
+
+				testItem = "testing Find()";
+				Assert.IsTrue(json.Find(delegate (JSON item, int index)
+				{
+					return item.ToString() == "C";
+				}).Stringify() == "\"C\"");
+
+
+				testItem = "testing FindIndex()";
+				Assert.IsTrue(json.FindIndex(delegate (JSON item, int index)
+				{
+					return item.ToString() == "A";
+				}) == 2);
+
+
+				testItem = "testing Some()";
+				Assert.IsTrue(json.Some(delegate (JSON item, int index)
+				{
+					return item.ToString() == "E";
+				}));
+				Assert.IsFalse(json.Some(delegate (JSON item, int index)
+				{
+					return item.ToString() == "D";
+				}));
+
+
+				testItem = "testing Pop()";
+				json.Pop();
+				Assert.IsTrue(json.Stringify() == "[\"B\",\"E\",\"A\",null]");
+
+
+				testItem = "testing Shift()";
+				json.Shift();
+				Assert.IsTrue(json.Stringify() == "[\"E\",\"A\",null]");
+
+
+				testItem = "testing Sort()";
+				json.Sort(delegate (JSON a, JSON b)
+				{
+					return a.ToString().CompareTo(b.ToString()) != -1;
+				});
+				Assert.IsTrue(json.Stringify() == "[\"A\",\"E\",null]");
+			}
+			catch (Exception e)
+			{
+				Assert.Fail(e.Message + " While " + testItem);
+			}
 		}
 
 		struct Struct

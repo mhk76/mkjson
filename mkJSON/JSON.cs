@@ -1291,6 +1291,163 @@ namespace MkJSON
 		}
 		#endregion
 
+		#region Helper functions
+		public delegate void EachDelegate(JSON item, int index);
+		public delegate bool HelperDelegate(JSON item, int index);
+		public delegate bool SortDelegate(JSON a, JSON b);
+
+		public void Each(EachDelegate callback)
+		{
+			if (Type == ValueType.Array)
+			{
+				foreach (KeyValuePair<int, JSON> item in (SortedDictionary<int, JSON>)_value)
+				{
+					callback(item.Value, item.Key);
+				}
+			}
+		}
+
+		public bool Every(HelperDelegate callback)
+		{
+			if (Type == ValueType.Array)
+			{
+				foreach (KeyValuePair<int, JSON> item in (SortedDictionary<int, JSON>)_value)
+				{
+					if (!callback(item.Value, item.Key))
+					{
+						return false;
+					}
+				}
+				return true;
+			}
+
+			return false;
+		}
+
+		public JSON Filter(HelperDelegate callback)
+		{
+			JSON output = new JSON();
+
+			if (Type == ValueType.Array)
+			{
+
+				foreach (KeyValuePair<int, JSON> item in (SortedDictionary<int, JSON>)_value)
+				{
+					if (callback(item.Value, item.Key))
+					{
+						output.Push(item.Value);
+					}
+				}
+			}
+
+			return output;
+		}
+
+		public JSON Find(HelperDelegate callback)
+		{
+			if (Type == ValueType.Array)
+			{
+				foreach (KeyValuePair<int, JSON> item in (SortedDictionary<int, JSON>)_value)
+				{
+					if (callback(item.Value, item.Key))
+					{
+						return item.Value;
+					}
+				}
+			}
+
+			return JSON.Undefined;
+		}
+
+		public int? FindIndex(HelperDelegate callback)
+		{
+			if (Type == ValueType.Array)
+			{
+				foreach (KeyValuePair<int, JSON> item in (SortedDictionary<int, JSON>)_value)
+				{
+					if (callback(item.Value, item.Key))
+					{
+						return item.Key;
+					}
+				}
+			}
+
+			return null;
+		}
+
+		public bool Some(HelperDelegate callback)
+		{
+			if (Type == ValueType.Array)
+			{
+				foreach (KeyValuePair<int, JSON> item in (SortedDictionary<int, JSON>)_value)
+				{
+					if (callback(item.Value, item.Key))
+					{
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
+
+		public void Sort(SortDelegate callback)
+		{
+			if (Type == ValueType.Array)
+			{
+				JSON[] values = ((SortedDictionary<int, JSON>)_value).Values.ToArray<JSON>();
+
+				QuickSort(ref values, 0, values.Length - 1, callback);
+
+				_value = new SortedDictionary<int, JSON>(
+					values
+						.Select((value, index) => new { Key = index, Value = value })
+						.ToDictionary(key => key.Key, value => value.Value)
+				);
+			}
+		}
+
+		private void QuickSort(ref JSON[] values, int low, int high, SortDelegate callback)
+		{
+			if (low < high)
+			{
+				int partition = Partition(ref values, low, high, callback);
+
+				QuickSort(ref values, low, partition - 1, callback);
+				QuickSort(ref values, partition + 1, high, callback);
+			}
+		}
+
+		private int Partition(ref JSON[] values, int low, int high, SortDelegate callback)
+		{
+			JSON pivot = values[high];
+			int i = low - 1;
+
+			for (int j = low; j < high; j++)
+			{
+				if (callback(pivot, values[j]))
+				{
+					++i;
+					Swap(ref values, i, j);	
+				}
+			}
+
+			if (callback(values[i + 1], values[high]))
+			{
+				Swap(ref values, high, i + 1);
+			}
+
+			return i + 1;
+		}
+
+		private void Swap(ref JSON[] values, int low, int high)
+		{
+			JSON tmp = values[low];
+			values[low] = values[high];
+			values[high] = tmp;
+		}
+		#endregion
+
 		private bool IsStrict(bool? strict = null)
 		{
 			if (strict.HasValue)
@@ -2180,6 +2337,31 @@ namespace MkJSON
 		}
 		#endregion
 
+		public JSON Pop(bool? strict = null)
+		{
+			if (_type != ValueType.Array)
+			{
+				if (IsStrict(strict))
+				{
+					throw new Exception("Can pop only from an Array");
+				}
+				return new JSON(ValueType.Undefined) { Strict = Strict };
+			}
+
+			if (((SortedDictionary<int, JSON>)_value).ContainsKey(_maxIndex))
+			{
+				JSON output = ((SortedDictionary<int, JSON>)_value)[_maxIndex];
+
+				((SortedDictionary<int, JSON>)_value).Remove(_maxIndex);
+				--_maxIndex;
+
+				return output;
+			}
+
+			--_maxIndex;
+			return new JSON(ValueType.Undefined) { Strict = Strict };
+		}
+
 		#region Push(value)
 		public void Push(string value, bool? strict = null)
 		{
@@ -2318,6 +2500,44 @@ namespace MkJSON
 			return false;
 		}
 		#endregion
+
+		public JSON Shift(bool? strict = null)
+		{
+			if (_type != ValueType.Array)
+			{
+				if (IsStrict(strict))
+				{
+					throw new Exception("Can shift an Array");
+				}
+				return new JSON(ValueType.Undefined) { Strict = Strict };
+			}
+
+			if (((SortedDictionary<int, JSON>)_value).ContainsKey(0))
+			{
+				JSON output = ((SortedDictionary<int, JSON>)_value)[0];
+
+				((SortedDictionary<int, JSON>)_value).Remove(0);
+				ShiftArray();
+
+				return output;
+			}
+
+			ShiftArray();
+			return new JSON(ValueType.Undefined) { Strict = Strict };
+		}
+
+		private void ShiftArray()
+		{
+			SortedDictionary<int, JSON> array = new SortedDictionary<int, JSON>();
+
+			foreach(KeyValuePair<int, JSON> item in (SortedDictionary<int, JSON>)_value)
+			{
+				array.Add(item.Key - 1, item.Value);
+			}
+
+			_value = array;
+			--_maxIndex;
+		}
 
 		#region Stringify()
 		public string Stringify()
