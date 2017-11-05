@@ -52,9 +52,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\mkJSON\MkJSON.csproj">
+    <ProjectReference Include="..\mkJSON\mkJSON.csproj">
       <Project>{71a0a03d-15d5-4057-88c6-333a8a2d423b}</Project>
-      <Name>MkJSON</Name>
+      <Name>mkJSON</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

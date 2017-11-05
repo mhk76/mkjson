@@ -7,8 +7,8 @@
     <ProjectGuid>{71A0A03D-15D5-4057-88C6-333A8A2D423B}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>MkJSON</RootNamespace>
-    <AssemblyName>MkJSON</AssemblyName>
+    <RootNamespace>mkJSON</RootNamespace>
+    <AssemblyName>mkJSON</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -33,6 +33,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="JSON.cs" />

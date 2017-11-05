@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 
-namespace MkJSON
+namespace mkJSON
 {
 	public class JSON : IDictionary<string, JSON>
 	{
@@ -22,7 +23,15 @@ namespace MkJSON
 			Boolean,
 		}
 
+		public enum NameFormat
+		{
+			AsIs,
+			LowerCamelCase,
+			UpperCamelCase
+		}
+
 		private static readonly char[] __whitespace = new char[] { ' ', '\n', '\r', '\t' };
+		private static readonly char[] __separators = new char[] { ' ', '.', '_', '-' };
 		private static readonly Type __jsonType = new JSON().GetType();
 		private static readonly Dictionary<Type, CallMethod> __tryGetValueMethods = GetTryGetValueMethods();
 		private static readonly MethodInfo __getArrayMethod = __jsonType.GetMethod("GetArray", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -552,6 +561,7 @@ namespace MkJSON
 		}
 		#endregion
 
+		#region Clear()
 		public void Clear()
 		{
 			if (_type == ValueType.Array)
@@ -564,6 +574,7 @@ namespace MkJSON
 				_value = new Dictionary<string, JSON>();
 			}
 		}
+		#endregion
 
 		#region Contains()
 		public bool Contains(KeyValuePair<int, JSON> item)
@@ -1041,6 +1052,11 @@ namespace MkJSON
 			{
 				return (JSON)(object)input;
 			}
+			if (inputType == typeof(DataSet))
+			{
+				return (JSON)FromDataSet((DataSet)(object)input);
+			}
+
 			if (inputType.IsArray)
 			{
 				return GetArray((Array)(object)input, strict);
@@ -1065,6 +1081,102 @@ namespace MkJSON
 			}
 
 			return output;
+		}
+
+		public static JSON FromDataSet(DataSet dataSet)
+		{
+			JSON output = new JSON(JSON.ValueType.Array);
+			int count = 0;
+
+			foreach (DataTable table in dataSet.Tables)
+			{
+				output.Add(count, FromDataTable(table));
+				++count;
+			}
+
+			return output;
+		}
+
+		public static JSON FromDataTable(DataTable table)
+		{
+			JSON output = new JSON(JSON.ValueType.Array);
+			int count = 0;
+
+			List<string[]> columns = GetTableColumns(table.Columns);
+
+			foreach (DataRow row in table.Rows)
+			{
+				output.Add(count, FromDataRow(row, columns));
+				++count;
+			}
+
+			return output;
+		}
+
+		public static JSON FromDataRow(DataRow row)
+		{
+			return FromDataRow(row, GetTableColumns(row.Table.Columns));
+		}
+
+		private static JSON FromDataRow(DataRow row, List<string[]> columns)
+		{
+			JSON output = new JSON(JSON.ValueType.Object);
+
+			foreach (string[] column in columns)
+			{
+				output.Add(column[1], row[column[0]]);
+			}
+
+			return output;
+		}
+
+		private static List<string[]> GetTableColumns(DataColumnCollection columns)
+		{
+			List<string[]> output = new List<string[]>();
+
+			foreach (DataColumn column in columns)
+			{
+				output.Add(new string[] { column.ColumnName, FormatColumn(column.ColumnName) });
+			}
+
+			return output;
+		}
+
+		private static string FormatColumn(string input)
+		{
+			switch (Global.NameFormat)
+			{
+				case NameFormat.LowerCamelCase:
+				case NameFormat.UpperCamelCase:
+				{
+					string[] split = input.ToLower().Split(__separators);
+					StringBuilder output = new StringBuilder();
+					bool first = (Global.NameFormat == NameFormat.LowerCamelCase);
+
+					foreach (string s in split)
+					{
+						if (first)
+						{
+							output.Append(s);
+							first = false;
+							continue;
+						}
+						if (s.Length == 1)
+						{
+							output.Append(s.ToUpper());
+							continue;
+						}
+						output.Append(s[0].ToString().ToUpper());
+						output.Append(s.Substring(1));
+					}
+
+					return output.ToString();
+				}
+				default:
+				{
+					return input;
+				}
+			}
 		}
 
 		private static JSON GetArray(Array input, bool? strict)
@@ -1232,10 +1344,12 @@ namespace MkJSON
 		}
 		#endregion
 
+		#region GetHashCode()
 		public override int GetHashCode()
 		{
 			return base.GetHashCode();
 		}
+		#endregion
 
 		#region GetItem()
 		public JSON GetItem(int index)
@@ -1448,19 +1562,6 @@ namespace MkJSON
 		}
 		#endregion
 
-		private bool IsStrict(bool? strict = null)
-		{
-			if (strict.HasValue)
-			{
-				return strict.Value;
-			}
-			if (Strict.HasValue)
-			{
-				return Strict.Value;
-			}
-			return JSON.Global.Strict;
-		}
-
 		#region Parse
 		private enum State
 		{
@@ -1542,16 +1643,15 @@ namespace MkJSON
 										}
 										json = new JSON(ValueType.Array);
 										state = State.WaitValue;
+										break;
 									}
-									else
+
+									if (json.Type != ValueType.Object && json.Type != ValueType.Undefined)
 									{
-										if (json.Type != ValueType.Object && json.Type != ValueType.Undefined)
-										{
-											throw new Exception("Invalid character " + c + " at char " + index);
-										}
-										json = new JSON(ValueType.Object);
-										state = State.WaitName;
+										throw new Exception("Invalid character " + c + " at char " + index);
 									}
+									json = new JSON(ValueType.Object);
+									state = State.WaitName;
 									break;
 								}
 
@@ -1560,11 +1660,11 @@ namespace MkJSON
 								if (json.Type == ValueType.Array)
 								{
 									json.Push(value);
+									state = State.WaitNext;
+									continue;
 								}
-								else
-								{
-									json.Add(name, value);
-								}
+
+								json.Add(name, value);
 								state = State.WaitNext;
 								continue;
 							}
@@ -1575,11 +1675,11 @@ namespace MkJSON
 								if (json.Type == ValueType.Array)
 								{
 									json.Push(value);
+									state = State.WaitNext;
+									continue;
 								}
-								else
-								{
-									json.Add(name, value);
-								}
+
+								json.Add(name, value);
 								state = State.WaitNext;
 								continue;
 							}
@@ -1703,11 +1803,10 @@ namespace MkJSON
 								if (json.Type == ValueType.Array)
 								{
 									state = State.Value;
+									break;
 								}
-								else
-								{
-									state = State.Name;
-								}
+
+								state = State.Name;
 								break;
 							}
 							case State.WaitName:
@@ -1734,11 +1833,11 @@ namespace MkJSON
 								if (json.Type == ValueType.Array)
 								{
 									json.Push(new JSON(builder.ToString()));
+									state = State.WaitNext;
+									break;
 								}
-								else
-								{
-									json.Add(name, new JSON(builder.ToString()));
-								}
+
+								json.Add(name, new JSON(builder.ToString()));
 								state = State.WaitNext;
 								break;
 							}
@@ -1795,11 +1894,11 @@ namespace MkJSON
 								if (json.Type == ValueType.Array)
 								{
 									json.Push(ParseNumberString(builder.ToString(), state == State.Number));
+									state = State.WaitStart;
+									break;
 								}
-								else
-								{
-									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
-								}
+
+								json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								state = State.WaitStart;
 								break;
 							}
@@ -2019,43 +2118,44 @@ namespace MkJSON
 								{
 									throw new Exception("Invalid character " + c + " at char " + index);
 								}
+
 								builder = new StringBuilder();
 								builder.Append(c);
+
 								if (c == '0')
 								{
 									state = State.WaitPeriod;
+									break;
 								}
-								else
-								{
-									state = State.Number;
-								}
+
+								state = State.Number;
 								break;
 							}
 							case State.WaitValue:
 							{
 								builder = new StringBuilder();
 								builder.Append(c);
+
 								if (c == '0')
 								{
 									state = State.WaitPeriod;
+									break;
 								}
-								else
-								{
-									state = State.Number;
-								}
+
+								state = State.Number;
 								break;
 							}
 							case State.WaitNumber:
 							{
 								builder.Append(c);
+
 								if (c == '0')
 								{
 									state = State.WaitPeriod;
+									break;
 								}
-								else
-								{
-									state = State.Number;
-								}
+
+								state = State.Number;
 								break;
 							}
 							case State.WaitDecimal:
@@ -2228,11 +2328,11 @@ namespace MkJSON
 								if (json.Type == ValueType.Array)
 								{
 									json.Push(ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
+									state = State.WaitNext;
+									break;
 								}
-								else
-								{
-									json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
-								}
+
+								json.Add(name, ParseNumberString(builder.ToString(), state == State.Number || state == State.WaitPeriod));
 								state = State.WaitNext;
 								break;
 							}
@@ -2268,7 +2368,31 @@ namespace MkJSON
 
 		private static bool CheckStringLiteral(char[] charArray, ref int index, char key)
 		{
-			char[] stringLiteral = getStringLiteral(key);
+			char[] stringLiteral;
+
+			switch (key)
+			{
+				case 't':
+				{
+					stringLiteral = "true".ToCharArray();
+					break;
+				}
+				case 'f':
+				{
+					stringLiteral = "false".ToCharArray();
+					break;
+				}
+				case 'n':
+				{
+					stringLiteral = "null".ToCharArray();
+					break;
+				}
+				default:
+				{
+					stringLiteral = null;
+					break;
+				}
+			}
 
 			if (stringLiteral == null)
 			{
@@ -2291,29 +2415,6 @@ namespace MkJSON
 			return true;
 		}
 
-		private static char[] getStringLiteral(char key)
-		{
-			switch (key)
-			{
-				case 't':
-				{
-					return "true".ToCharArray();
-				}
-				case 'f':
-				{
-					return "false".ToCharArray();
-				}
-				case 'n':
-				{
-					return "null".ToCharArray();
-				}
-				default:
-				{
-					return null;
-				}
-			}
-		}
-
 		private static JSON ParseNumberString(string number, bool isInteger)
 		{
 			if (isInteger)
@@ -2325,18 +2426,19 @@ namespace MkJSON
 
 				return new JSON(ValueType.Null);
 			}
-			else
+
 			{
 				if (double.TryParse(number, NumberStyles.Float, CultureInfo.InvariantCulture, out double value))
 				{
 					return new JSON(value);
 				}
-
-				return new JSON(ValueType.Null);
 			}
+
+			return new JSON(ValueType.Null);
 		}
 		#endregion
 
+		#region Pop()
 		public JSON Pop(bool? strict = null)
 		{
 			if (_type != ValueType.Array)
@@ -2361,6 +2463,7 @@ namespace MkJSON
 			--_maxIndex;
 			return new JSON(ValueType.Undefined) { Strict = Strict };
 		}
+		#endregion
 
 		#region Push(value)
 		public void Push(string value, bool? strict = null)
@@ -2501,6 +2604,7 @@ namespace MkJSON
 		}
 		#endregion
 
+		#region Shift()
 		public JSON Shift(bool? strict = null)
 		{
 			if (_type != ValueType.Array)
@@ -2538,6 +2642,7 @@ namespace MkJSON
 			_value = array;
 			--_maxIndex;
 		}
+		#endregion
 
 		#region Stringify()
 		public string Stringify()
@@ -3415,10 +3520,26 @@ namespace MkJSON
 		}
 		#endregion
 
+		#region Private methods
+		private bool IsStrict(bool? strict = null)
+		{
+			if (strict.HasValue)
+			{
+				return strict.Value;
+			}
+			if (Strict.HasValue)
+			{
+				return Strict.Value;
+			}
+			return JSON.Global.Strict;
+		}
+		#endregion
+
 		public class GlobalParameters
 		{
 			public bool Strict = false;
 			public bool CaseSensitive = true;
+			public NameFormat NameFormat = NameFormat.AsIs;
 		}
 	}
 }

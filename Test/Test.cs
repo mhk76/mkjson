@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MkJSON;
+using mkJSON;
 
 namespace Test
 {
@@ -10,7 +10,7 @@ namespace Test
 	public class JSONTest
 	{
 		[TestMethod]
-		public void JSON_Parse()
+		public void Parse()
 		{
 			string[] passFiles = Directory.GetFiles(@"..\..\test", "pass*.json");
 			string[] failFiles = Directory.GetFiles(@"..\..\test", "fail*.json");
@@ -46,7 +46,7 @@ namespace Test
 		}
 
 		[TestMethod]
-		public void JSON_Add_and_Get()
+		public void Add_and_Get()
 		{
 			string testItem = "initializing";
 

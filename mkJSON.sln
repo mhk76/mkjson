@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.12
+VisualStudioVersion = 15.0.27004.2006
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "Test\Test.csproj", "{77ABDEBB-D536-4E32-ADAF-E8A18280C07C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MkJSON", "mkJSON\MkJSON.csproj", "{71A0A03D-15D5-4057-88C6-333A8A2D423B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mkJSON", "mkJSON\mkJSON.csproj", "{71A0A03D-15D5-4057-88C6-333A8A2D423B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
