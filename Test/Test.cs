@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -61,7 +62,7 @@ namespace Test
 				testItem = "adding to an array an int";
 				array.Add(3, (int)2);
 				testItem = "adding to an array a float";
-				array.Add(5,(float)3.45);
+				array.Add(5, (float)3.45);
 				testItem = "adding to an array a double";
 				array.Add(7, (double)4.56789);
 				testItem = "adding to an array a bool";
@@ -305,6 +306,15 @@ namespace Test
 		[TestMethod]
 		public void Error_testing()
 		{
+			string testItem = "initializing";
+
+			try
+			{
+			}
+			catch (Exception e)
+			{
+				Assert.Fail(e.Message + " While " + testItem);
+			}
 		}
 
 		[TestMethod]
@@ -392,6 +402,67 @@ namespace Test
 					return a.ToString().CompareTo(b.ToString()) != -1;
 				});
 				Assert.IsTrue(json.Stringify() == "[\"A\",\"E\",null]");
+			}
+			catch (Exception e)
+			{
+				Assert.Fail(e.Message + " While " + testItem);
+			}
+		}
+
+		[TestMethod]
+		public void From_DataTables()
+		{
+			string testItem = "initializing";
+
+			try
+			{
+				DataSet dataSet = new DataSet();
+
+				dataSet.Tables.Add(new DataTable());
+				dataSet.Tables.Add(new DataTable());
+
+				dataSet.Tables[0].Columns.Add("first_table_column_1", typeof(int));
+				dataSet.Tables[0].Columns.Add("first-Table-Column-2", typeof(string));
+				dataSet.Tables[0].Rows.Add((int)0, "0");
+				dataSet.Tables[0].Rows.Add((int)1, "1");
+				dataSet.Tables[1].Columns.Add("Second.Table columN 1", typeof(string));
+				dataSet.Tables[1].Rows.Add("2");
+
+
+				JSON.Global.NameFormat = JSON.NameFormat.AsIs;
+
+				testItem = "reading dataset as is";
+				Assert.IsTrue(JSON.From(dataSet).Stringify() == "[[{\"first_table_column_1\":0,\"first-Table-Column-2\":\"0\"},{\"first_table_column_1\":1,\"first-Table-Column-2\":\"1\"}],[{\"Second.Table columN 1\":\"2\"}]]");
+
+				testItem = "reading datatable as is";
+				Assert.IsTrue(JSON.From(dataSet.Tables[0]).Stringify() == "[{\"first_table_column_1\":0,\"first-Table-Column-2\":\"0\"},{\"first_table_column_1\":1,\"first-Table-Column-2\":\"1\"}]");
+
+				testItem = "reading datarow as is";
+				Assert.IsTrue(JSON.From(dataSet.Tables[0].Rows[0]).Stringify() == "{\"first_table_column_1\":0,\"first-Table-Column-2\":\"0\"}");
+
+
+				JSON.Global.NameFormat = JSON.NameFormat.LowerCamelCase;
+
+				testItem = "reading dataset as lower camelcase";
+				Assert.IsTrue(JSON.From(dataSet).Stringify() == "[[{\"firstTableColumn1\":0,\"firstTableColumn2\":\"0\"},{\"firstTableColumn1\":1,\"firstTableColumn2\":\"1\"}],[{\"secondTableColumn1\":\"2\"}]]");
+
+				testItem = "reading datatable as lower camelcase";
+				Assert.IsTrue(JSON.From(dataSet.Tables[0]).Stringify() == "[{\"firstTableColumn1\":0,\"firstTableColumn2\":\"0\"},{\"firstTableColumn1\":1,\"firstTableColumn2\":\"1\"}]");
+
+				testItem = "reading datarow as lower camelcase";
+				Assert.IsTrue(JSON.From(dataSet.Tables[0].Rows[0]).Stringify() == "{\"firstTableColumn1\":0,\"firstTableColumn2\":\"0\"}");
+
+
+				JSON.Global.NameFormat = JSON.NameFormat.UpperCamelCase;
+
+				testItem = "reading dataset as upper camelcase";
+				Assert.IsTrue(JSON.From(dataSet).Stringify() == "[[{\"FirstTableColumn1\":0,\"FirstTableColumn2\":\"0\"},{\"FirstTableColumn1\":1,\"FirstTableColumn2\":\"1\"}],[{\"SecondTableColumn1\":\"2\"}]]");
+
+				testItem = "reading datatable as upper camelcase";
+				Assert.IsTrue(JSON.From(dataSet.Tables[0]).Stringify() == "[{\"FirstTableColumn1\":0,\"FirstTableColumn2\":\"0\"},{\"FirstTableColumn1\":1,\"FirstTableColumn2\":\"1\"}]");
+
+				testItem = "reading datarow as upper camelcase";
+				Assert.IsTrue(JSON.From(dataSet.Tables[0].Rows[0]).Stringify() == "{\"FirstTableColumn1\":0,\"FirstTableColumn2\":\"0\"}");
 			}
 			catch (Exception e)
 			{

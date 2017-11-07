@@ -1052,10 +1052,6 @@ namespace mkJSON
 			{
 				return (JSON)(object)input;
 			}
-			if (inputType == typeof(DataSet))
-			{
-				return (JSON)FromDataSet((DataSet)(object)input);
-			}
 
 			if (inputType.IsArray)
 			{
@@ -1083,42 +1079,42 @@ namespace mkJSON
 			return output;
 		}
 
-		public static JSON FromDataSet(DataSet dataSet)
+		public static JSON From(DataSet dataSet, NameFormat? nameFormat = null)
 		{
 			JSON output = new JSON(JSON.ValueType.Array);
 			int count = 0;
 
 			foreach (DataTable table in dataSet.Tables)
 			{
-				output.Add(count, FromDataTable(table));
+				output.Add(count, From(table, nameFormat));
 				++count;
 			}
 
 			return output;
 		}
 
-		public static JSON FromDataTable(DataTable table)
+		public static JSON From(DataTable table, NameFormat? nameFormat = null)
 		{
 			JSON output = new JSON(JSON.ValueType.Array);
 			int count = 0;
 
-			List<string[]> columns = GetTableColumns(table.Columns);
+			List<string[]> columns = GetTableColumns(table.Columns, nameFormat);
 
 			foreach (DataRow row in table.Rows)
 			{
-				output.Add(count, FromDataRow(row, columns));
+				output.Add(count, From(row, columns));
 				++count;
 			}
 
 			return output;
 		}
 
-		public static JSON FromDataRow(DataRow row)
+		public static JSON From(DataRow row, NameFormat? nameFormat = null)
 		{
-			return FromDataRow(row, GetTableColumns(row.Table.Columns));
+			return From(row, GetTableColumns(row.Table.Columns, nameFormat));
 		}
 
-		private static JSON FromDataRow(DataRow row, List<string[]> columns)
+		private static JSON From(DataRow row, List<string[]> columns)
 		{
 			JSON output = new JSON(JSON.ValueType.Object);
 
@@ -1130,21 +1126,26 @@ namespace mkJSON
 			return output;
 		}
 
-		private static List<string[]> GetTableColumns(DataColumnCollection columns)
+		private static List<string[]> GetTableColumns(DataColumnCollection columns, NameFormat? nameFormat = null)
 		{
 			List<string[]> output = new List<string[]>();
 
 			foreach (DataColumn column in columns)
 			{
-				output.Add(new string[] { column.ColumnName, FormatColumn(column.ColumnName) });
+				output.Add(new string[] { column.ColumnName, FormatColumn(column.ColumnName, nameFormat) });
 			}
 
 			return output;
 		}
 
-		private static string FormatColumn(string input)
+		private static string FormatColumn(string input, NameFormat? nameFormat = null)
 		{
-			switch (Global.NameFormat)
+			if (!nameFormat.HasValue)
+			{
+				nameFormat = Global.NameFormat;
+			}
+
+			switch (nameFormat)
 			{
 				case NameFormat.LowerCamelCase:
 				case NameFormat.UpperCamelCase:
