@@ -151,6 +151,32 @@ namespace Test
 					+ ",\"string\":\"Hello World\",\"array\":[null,10000000000,null,2,null,3.45,null,4.56789,null,true,null,\"2004-02-29T13:15:59.000\","
 					+ "null,\"Hello\",null,\"World\",null,{}],\"Hello\":\"World\",\"object\":{}}"
 				);
+
+
+				testItem = "reading a dictionary with int key type";
+				Dictionary<int, string> intDictionary = new Dictionary<int, string>
+				{
+					{ 1, "A" },
+					{ 2, "B" }
+				};
+
+				Assert.AreEqual(
+					JSON.From(intDictionary).Stringify(),
+					"[null,\"A\",\"B\"]"
+				);
+
+
+				testItem = "reading a dictionary with string key type";
+				Dictionary<string, long> stringDictionary = new Dictionary<string, long>
+				{
+					{ "A", 1 },
+					{ "B", 2 }
+				};
+
+				Assert.AreEqual(
+					JSON.From(stringDictionary).Stringify(),
+					"{\"A\":1,\"B\":2}"
+				);
 			}
 			catch (Exception e)
 			{
@@ -505,46 +531,17 @@ namespace Test
 
 		class Class
 		{
-			public bool Bool
-			{
-				get; set;
-			}
-			public float Float
-			{
-				get; set;
-			}
-			public double Double
-			{
-				get; set;
-			}
-			public int Int
-			{
-				get; set;
-			}
-			public long Long
-			{
-				get; set;
-			}
-			public string String
-			{
-				get; set;
-			}
-			public JSON Json
-			{
-				get; set;
-			}
-			public Struct[] StructArray
-			{
-				get; set;
-			}
-			public Class Self
-			{
-				get; set;
-			}
+			public bool Bool { get; set; }
+			public float Float;
+			public double Double { get; set; }
+			public int Int;
+			public long Long { get; set; }
+			public string String;
+			public JSON Json { get; set; }
+			public Struct[] StructArray { get; set; }
+			public Class Self;
 
-			public Class()
-			{
-			}
+			public Class() { }
 
 			public Class(bool self)
 			{

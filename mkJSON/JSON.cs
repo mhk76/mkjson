@@ -1058,7 +1058,44 @@ namespace mkJSON
 				return GetArray((Array)(object)input, strict);
 			}
 
-			JSON output = new JSON(JSON.ValueType.Object)
+			JSON output;
+
+			if (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(Dictionary<,>))
+			{
+				Type keyType = inputType.GetGenericArguments()[0];
+
+				if (keyType == typeof(int))
+				{
+					output = new JSON(ValueType.Array)
+					{
+						Strict = strict
+					};
+
+					foreach (dynamic item in (IDictionary)input)
+					{
+						output[item.Key] = JSON.From(item.Value);
+					}
+
+					return output;
+				}
+				if (keyType == typeof(string))
+				{
+					output = new JSON(ValueType.Object)
+					{
+						Strict = strict
+					};
+
+					foreach (dynamic item in (IDictionary)input)
+					{
+						output[item.Key] = JSON.From(item.Value);
+					}
+
+					return output;
+				}
+				throw new Exception("Unsupported dictionary key type");
+			}
+
+			output = new JSON(JSON.ValueType.Object)
 			{
 				Strict = strict
 			};
